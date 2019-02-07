@@ -171,3 +171,28 @@ end
 ==(l1::Link,l2::Link)=(l1.name==l2.name)&(l1.presence==l2.presence)&(l1.from==l2.from)&(l1.to==l2.to)&(l1.weight==l2.weight)
 from_match(l1::Link,l2::Link)=(l1.from==l2.from)
 to_match(l1::Link,l2::Link)=(l1.to==l2.to)
+
+# ----------- STREAM DEFINITIONS -------------
+#
+struct LinkStream <: Stream
+    name::AbstractString
+    tstart::Float64
+    tend::Float64
+    nodes::Array{SNode, 1}
+    links::Array{Link, 1}
+    from_to_links::Dict{AbstractString,Array{Int64,1}}
+    to_to_links::Dict{AbstractString,Array{Int64,1}}
+end
+
+struct StreamGraph <: Stream
+    name::AbstractString
+    tstart::Float64
+    tend::Float64
+    nodes::Array{DNode, 1}
+    links::Array{Link, 1}
+    from_to_links::Dict{AbstractString,Array{Int64,1}}
+    to_to_links::Dict{AbstractString,Array{Int64,1}}
+end
+
+==(s1::Stream,s2::Stream)=(s1.name==s2.name)&(s1.tstart==s2.tstart)&(s1.tend==s2.tend)&(s1.nodes==s2.nodes)&(s1.links==s2.links)
+⊆(s1::Stream,s2::Stream)=(s2.tstart<=s1.tstart<=s1.tend<=s2.tend)&(s1.nodes ⊆ s2.nodes)&(s1.links ⊆ s2.links)
