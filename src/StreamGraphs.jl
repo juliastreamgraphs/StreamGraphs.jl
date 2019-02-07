@@ -9,13 +9,28 @@ module StreamGraphs
 # Imports
 
 import Base.≈
-
-using Test
+import Base.==
+import Base.∈
+import Base.∪
+import Base.∩
+import Base.⊆
+import Base: length
 
 ########################################
 # Exports
 
+export Intervals
+export ==
 export ≈
+export ∈
+export ∪
+export ∩
+export ⊆
+export count
+export length
+export merge
+export push
+export clean
 
 #######################################
 # Includes
