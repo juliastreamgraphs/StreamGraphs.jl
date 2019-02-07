@@ -138,3 +138,22 @@ end
 
 """Two static nodes are equal if their names are the same."""
 ==(a::SNode,b::SNode)=a.name==b.name
+
+# ----------- DYNAMIC NODE DEFINITIONS -------------
+#
+"""DNode implements dynamic nodes."""
+mutable struct DNode <: Node
+    name::AbstractString
+    presence::Intervals
+end
+
+"""Two dynamic nodes are equal if their names and presence are the same."""
+==(a::DNode,b::DNode)=(a.name==b.name)&(a.presence==b.presence)
+
+"""A dynamic node is included in another if its presence is included in the other node's presence."""
+⊆(a::StreamObject,b::StreamObject)=a.presence ⊆ b.presence
+⊆(i::Intervals,o::StreamObject)=i ⊆ o.presence
+⊆(i::Tuple{Float64,Float64},o::StreamObject)=i ⊆ o.presence
+∈(t::Float64,n::StreamObject)=t ∈ n.presence
+∩(a::StreamObject,b::StreamObject)=a.presence ∩ b.presence
+∪(a::StreamObject,b::StreamObject)=a.presence ∪ b.presence
