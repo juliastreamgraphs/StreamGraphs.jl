@@ -5,13 +5,21 @@ Module for studying stream graphs and link streams.
 
 module StreamGraphs
 
-########################################
-# Exports
-
 #######################################
 # Imports
 
+import Base.≈
+
+using Test
+
+########################################
+# Exports
+
+export ≈
+
 #######################################
 # Includes
+
+include("base.jl")
 
 end
