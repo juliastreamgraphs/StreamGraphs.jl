@@ -20,3 +20,8 @@ end
     @info "Check Nodes"
     include("nodes.jl")
 end
+
+@testset "Link Tests" begin
+    @info "Check Links"
+    include("links.jl")
+end
