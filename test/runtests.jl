@@ -15,3 +15,8 @@ end
     @info "Check Intervals operations"
     include("intervals.jl")
 end
+
+@testset "Node Tests" begin
+    @info "Check Nodes"
+    include("nodes.jl")
+end
