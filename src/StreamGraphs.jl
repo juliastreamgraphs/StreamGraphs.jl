@@ -19,18 +19,10 @@ import Base: length
 ########################################
 # Exports
 
-export Intervals, Node, SNode, DNode
-export ==
-export ≈
-export ∈
-export ∪
-export ∩
-export ⊆
-export count
-export length
-export merge
-export push
-export clean
+export Intervals, Node, SNode, DNode, Link
+export count, length, merge, push, clean, from_match, to_match
+export ==, ≈, ∈, ∪, ∩, ⊆
+
 
 #######################################
 # Includes

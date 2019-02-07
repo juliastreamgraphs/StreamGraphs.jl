@@ -157,3 +157,17 @@ end
 ∈(t::Float64,n::StreamObject)=t ∈ n.presence
 ∩(a::StreamObject,b::StreamObject)=a.presence ∩ b.presence
 ∪(a::StreamObject,b::StreamObject)=a.presence ∪ b.presence
+
+# ----------- LINK DEFINITIONS -------------
+#
+mutable struct Link <: StreamObject
+    name::AbstractString
+    presence::Intervals
+    from::Node
+    to::Node
+    weight::Float64
+end
+
+==(l1::Link,l2::Link)=(l1.name==l2.name)&(l1.presence==l2.presence)&(l1.from==l2.from)&(l1.to==l2.to)&(l1.weight==l2.weight)
+from_match(l1::Link,l2::Link)=(l1.from==l2.from)
+to_match(l1::Link,l2::Link)=(l1.to==l2.to)
