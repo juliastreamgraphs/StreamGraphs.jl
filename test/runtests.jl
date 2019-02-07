@@ -10,3 +10,8 @@ global_logger(ConsoleLogger(gl.stream, Logging.Error))
     @info "Check tuple equality approximation"
     include("tuples.jl")
 end
+
+@testset "Intervals Tests" begin
+    @info "Check Intervals operations"
+    include("intervals.jl")
+end
