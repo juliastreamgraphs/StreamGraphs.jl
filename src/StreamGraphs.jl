@@ -19,7 +19,7 @@ import Base: length
 ########################################
 # Exports
 
-export Intervals
+export Intervals, Node, SNode
 export ==
 export ≈
 export ∈

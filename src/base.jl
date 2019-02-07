@@ -1,5 +1,8 @@
+abstract type StreamObject end
+abstract type Node <: StreamObject end
+abstract type Stream end
 
-# -------- TUPLES ---------
+# ----------- TUPLES -------------
 #
 # Equality between tuples of float64 is defined at 10^-6 rouding error
 ≈(a::Tuple{Float64,Float64},b::Tuple{Float64,Float64};atol::Real=10^-6)=≈(a[1],b[1],atol=atol)&&≈(a[2],b[2],atol=atol)
@@ -10,7 +13,7 @@ function ≈(a::Array{Tuple{Float64,Float64}},b::Array{Tuple{Float64,Float64}};a
     return all([x[1]≈x[2] for x in zip(a,b)])
 end
 
-# -------- INTERVALS ---------
+# ----------- INTERVALS -------------
 #
 """
 Structure implementing lists of intervals.
@@ -125,3 +128,13 @@ end
 """Is subset returns True if i2 is included within i1."""
 ⊆(i1::Intervals,i2::Intervals)=(i1 ∩ i2)==clean(i1)
 ⊆(i1::Tuple{Float64,Float64},i2::Intervals)=Intervals([i1]) ⊆ i2
+
+# ----------- STATIC NODE DEFINITIONS -------------
+#
+"""SNode implements static nodes which have no dynamic."""
+mutable struct SNode <: Node
+    name::AbstractString
+end
+
+"""Two static nodes are equal if their names are the same."""
+==(a::SNode,b::SNode)=a.name==b.name
