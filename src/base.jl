@@ -335,6 +335,10 @@ struct StreamGraph <: Stream
 end
 
 ==(s1::Stream,s2::Stream)=(s1.name==s2.name)&(s1.tstart==s2.tstart)&(s1.tend==s2.tend)&(s1.nodes==s2.nodes)&(s1.links==s2.links)
-⊆(s1::Stream,s2::Stream)=(s2.tstart<=s1.tstart<=s1.tend<=s2.tend)&(s1.nodes ⊆ s2.nodes)&(s1.links ⊆ s2.links)
-
-
+∈(t::Float64,s::Stream)=s.tstart<=t<=s.tend
+∈(n::Node,s::Stream)=n ∈ s.nodes
+∈(l::Link,s::Stream)=l ∈ s.links
+⊆(t::Tuple{Float64,Float64},s::Stream)=t ⊆ Intervals([(s.tstart,s.tend)])
+⊆(n::Array{DNode},s::Stream)=all([nn ⊆ s.nodes for nn in n])
+⊆(l::Array{Link},s::Stream)=all([ll ⊆ s.links for ll in l])
+⊆(s1::Stream,s2::Stream)=(s2.tstart<=s1.tstart<=s1.tend<=s2.tend)&(s1.nodes ⊆ s2)&(s1.links ⊆ s2)
