@@ -27,7 +27,7 @@ end
 Equality between two lists of intervals
 NOTE: Use approx here because of rounding errors in intervals.
 """
-==(i1::Intervals,i2::Intervals)=i1.list≈i2.list
+==(i1::Intervals,i2::Intervals)=clean(i1).list≈clean(i2).list
 
 """
 In operator.
@@ -147,16 +147,82 @@ mutable struct DNode <: Node
     presence::Intervals
 end
 
-"""Two dynamic nodes are equal if their names and presence are the same."""
+# --- Operations on DNodes ---
 ==(a::DNode,b::DNode)=(a.name==b.name)&(a.presence==b.presence)
-
-"""A dynamic node is included in another if its presence is included in the other node's presence."""
 ⊆(a::StreamObject,b::StreamObject)=a.presence ⊆ b.presence
 ⊆(i::Intervals,o::StreamObject)=i ⊆ o.presence
 ⊆(i::Tuple{Float64,Float64},o::StreamObject)=i ⊆ o.presence
 ∈(t::Float64,n::StreamObject)=t ∈ n.presence
 ∩(a::StreamObject,b::StreamObject)=a.presence ∩ b.presence
 ∪(a::StreamObject,b::StreamObject)=a.presence ∪ b.presence
+
+# --- Operations on Arrays of DNodes ---
+get_idx(n::StreamObject,a::Array{DNode,1})=findall(i->i==n,a)
+get_idx(name::AbstractString,a::Array{DNode,1})=findall(i->i.name==name,a)
+get_idx(t::Float64,a::Array{DNode,1})=findall(i->t ∈ i,a)
+
+function ==(a::Array{DNode,1},b::Array{DNode,1})
+    if length(a) != length(b)
+        return false
+    end
+    return all([x[1]==x[2] for x in zip(a,b)])
+end
+
+function ⊆(n::StreamObject,a::Array{DNode,1})
+    idx = get_idx(n.name,a)
+    if length(idx) == 0
+        return false
+    end
+    return all([n ⊆ a[i] for i in idx])
+end
+
+function ⊆(a::Array{DNode,1},b::Array{DNode,1})
+    for n in a
+        if n ⊈ b
+            return false
+        end
+    end
+    return true
+end
+
+function ∪(a::Array{DNode,1},b::Array{DNode,1})
+    c = DNode[]
+    for aa in a
+        idx = get_idx(aa.name,b)
+        if length(idx)==0
+            new = DNode(aa.name, aa.presence)
+        elseif length(idx)==1
+            new = DNode(aa.name, aa ∪ b[idx][1])
+        else
+            throw("More than one node named $aa.name in array.")
+        end
+        push!(c,new)
+    end
+    for bb in b
+        idx = get_idx(bb,a)
+        if length(idx)==0
+            new = DNode(bb.name, bb.presence)
+            push!(c,new)
+        elseif length(idx)!=1
+            throw("More than one node named $aa.name in array.")
+        end
+    end
+    return c
+end
+
+function ∩(a::Array{DNode,1},b::Array{DNode,1})
+    c = DNode[]
+    for aa in a
+        idx = get_idx(aa.name,b)
+        if length(idx)==1
+            new = DNode(aa.name, aa ∩ b[idx][1])
+            push!(c,new)
+        elseif length(idx)!=0
+            throw("More than one node named $aa.name in array.")
+        end
+    end
+    return c
+end
 
 # ----------- LINK DEFINITIONS -------------
 #
@@ -196,3 +262,5 @@ end
 
 ==(s1::Stream,s2::Stream)=(s1.name==s2.name)&(s1.tstart==s2.tstart)&(s1.tend==s2.tend)&(s1.nodes==s2.nodes)&(s1.links==s2.links)
 ⊆(s1::Stream,s2::Stream)=(s2.tstart<=s1.tstart<=s1.tend<=s2.tend)&(s1.nodes ⊆ s2.nodes)&(s1.links ⊆ s2.links)
+
+
