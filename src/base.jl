@@ -157,7 +157,7 @@ end
 ∪(a::StreamObject,b::StreamObject)=a.presence ∪ b.presence
 
 # --- Operations on Arrays of DNodes ---
-get_idx(n::StreamObject,a::Array{DNode,1})=findall(i->i==n,a)
+get_idx(n::DNode,a::Array{DNode,1})=findall(i->i==n,a)
 get_idx(name::AbstractString,a::Array{DNode,1})=findall(i->i.name==name,a)
 get_idx(t::Float64,a::Array{DNode,1})=findall(i->t ∈ i,a)
 
@@ -168,7 +168,7 @@ function ==(a::Array{DNode,1},b::Array{DNode,1})
     return all([x[1]==x[2] for x in zip(a,b)])
 end
 
-function ⊆(n::StreamObject,a::Array{DNode,1})
+function ⊆(n::DNode,a::Array{DNode,1})
     idx = get_idx(n.name,a)
     if length(idx) == 0
         return false
@@ -234,9 +234,83 @@ mutable struct Link <: StreamObject
     weight::Float64
 end
 
+# --- Operations on Links ---
 ==(l1::Link,l2::Link)=(l1.name==l2.name)&(l1.presence==l2.presence)&(l1.from==l2.from)&(l1.to==l2.to)&(l1.weight==l2.weight)
 from_match(l1::Link,l2::Link)=(l1.from==l2.from)
 to_match(l1::Link,l2::Link)=(l1.to==l2.to)
+match(l1::Link,l2::Link)=from_match(l1,l2)&to_match(l1,l2)
+
+# --- Operations on Arrays of Links ---
+from_match(l1::Link,l::Array{Link,1})=findall(x->from_match(x,l1),l)
+to_match(l1::Link,l::Array{Link,1})=findall(x->to_match(x,l1),l)
+match(l1::Link,l::Array{Link,1})=findall(x->match(x,l1),l)
+
+get_idx(l::Link,a::Array{Link,1})=findall(i->i==l,a)
+get_idx(name::AbstractString,a::Array{Link,1})=findall(i->i.name==name,a)
+get_idx(t::Float64,a::Array{Link,1})=findall(i->t ∈ i,a)
+
+function ==(a::Array{Link,1},b::Array{Link,1})
+    if length(a) != length(b)
+        return false
+    end
+    return all([x[1]==x[2] for x in zip(a,b)])
+end
+
+function ⊆(l::Link,a::Array{Link,1})
+    idx = get_idx(l.name,a)
+    if length(idx) == 0
+        return false
+    end
+    return all([l ⊆ a[i] for i in idx])
+end
+
+function ⊆(a::Array{Link,1},b::Array{Link,1})
+    for n in a
+        if n ⊈ b
+            return false
+        end
+    end
+    return true
+end
+
+function ∪(a::Array{Link,1},b::Array{Link,1})
+    c = Link[]
+    for aa in a
+        idx = match(aa,b)
+        if length(idx)==0
+            new = Link(aa.name, aa.presence, aa.from, aa.to, aa.weight)
+        elseif length(idx)==1
+            new = Link(aa.name, aa ∪ b[idx][1], aa.from, aa.to, aa.weight)
+        else
+            throw("More than one link matching from $aa.from and to $aa.to in array.")
+        end
+        push!(c,new)
+    end
+    for bb in b
+        idx = match(bb,a)
+        if length(idx)==0
+            new = Link(bb.name, bb.presence, bb.from, bb.to, bb.weight)
+            push!(c,new)
+        elseif length(idx)!=1
+            throw("More than one link matching from $aa.from and to $aa.to in array.")
+        end
+    end
+    return c
+end
+
+function ∩(a::Array{Link,1},b::Array{Link,1})
+    c = Link[]
+    for aa in a
+        idx = match(aa,b)
+        if length(idx)==1
+            new = Link(aa.name, aa ∩ b[idx][1], aa.from, aa.to, aa.weight)
+            push!(c,new)
+        elseif length(idx)!=0
+            throw("More than one link matching from $aa.from and to $aa.to in array.")
+        end
+    end
+    return c
+end
 
 # ----------- STREAM DEFINITIONS -------------
 #

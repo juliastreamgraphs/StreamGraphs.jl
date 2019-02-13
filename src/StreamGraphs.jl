@@ -14,13 +14,13 @@ import Base.∈
 import Base.∪
 import Base.∩
 import Base.⊆
-import Base: length
+import Base: length, match
 
 ########################################
 # Exports
 
 export Intervals, Node, SNode, DNode, Link, StreamObject, Stream, LinkStream, StreamGraph
-export count, length, merge, push, clean, from_match, to_match, get_idx
+export count, length, merge, push, clean, from_match, to_match, match, get_idx
 export ==, ≈, ∈, ∪, ∩, ⊆
 
 
