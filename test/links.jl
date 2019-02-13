@@ -17,9 +17,25 @@ l3 = Link("a to c", Intervals([(0.45,0.56)]), a, c, .5)
 @test (l1 ∩ l3).list == [(0.45,0.56)]
 @test (l3 ∪ l1).list == [(0.33,0.66)]
 
-ll1 = [l1,l2,l3]
-ll2 = [l2,l1,l3]
-ll3 = [l3,l2,l1]
-
-@test ll1 == ll2
-@test ll1 != ll3
+l1 = Link("a to b", Intervals([(0.33,0.66)]), a, b, .5)
+l2 = Link("a to c", Intervals([(0.45,0.56)]), a, c, .5)
+l3 = Link("b to c", Intervals([(0.5,1.0)]), b, c, .5)
+L1 = [l3,l2]
+@test from_match(l1,L1) == [2]
+@test to_match(l2,L1) == [1,2]
+@test match(l3,L1) == [1]
+@test get_idx(l2,L1) == [2]
+@test get_idx("b to c",L1) == [1]
+@test l2 ∈ L1
+@test l3 ∈ L1
+@test l1 ∉ L1
+L1 = [l1,l2,l3]
+@test get_idx(0.4,L1) == [1]
+@test get_idx(0.55,L1) == [1,2,3]
+@test get_idx(1.0001,L1) == []
+@test l1 ⊆ L1
+@test Link("a to b", Intervals([(0.4,0.5)]), a, b, .5) ⊆ L1
+@test Link("a to b", Intervals([(0.4,0.7)]), a, b, .5) ⊈ L1
+L2 = [l1,l3]
+@test L1 ∩ L2 == [l1,l3]
+@test L1 ∪ L2 == [l1,l2,l3]
