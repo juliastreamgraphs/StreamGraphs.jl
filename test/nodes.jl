@@ -64,3 +64,12 @@ L2 = [Node("a",Intervals([(0.3,0.9)])),
       Node("b",Intervals([(1.3,1.9)])),
       Node("z",Intervals([(1.2,1.3)]))]
 @test !all(L2 .⊆ L)
+
+a1 = Node("a",Intervals([(0.5,1.0),(1.5,2.5)]))
+a2 = Node("a",Intervals([(0.0,0.45),(0.6,1.0),(1.1,1.4),(2.3,3.0)]))
+a3 = merge(a1,a2)
+@test a3.name == "a"
+@test a3.presence == Intervals([(0.0,0.45),(0.5,1.0),(1.1,1.4),(1.5,3.0)])
+merge!(a1,a2)
+@test a1.name == "a"
+@test a1.presence == Intervals([(0.0,0.45),(0.5,1.0),(1.1,1.4),(1.5,3.0)])
