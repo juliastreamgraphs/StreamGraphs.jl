@@ -19,10 +19,18 @@ import Base: length, match
 ########################################
 # Exports
 
-export Intervals, Node, SNode, DNode, Link, StreamObject, Stream, LinkStream, StreamGraph
-export count, length, merge, push, clean, from_match, to_match, match, get_idx
-export ==, ≈, ∈, ∪, ∩, ⊆
+export 
 
+		# Stream components
+		Intervals, Node, Link, StreamObject, AbstractStream, 
+		LinkStream, StreamGraph,
+
+		# functions
+		count, length, merge, push, clean, from_match, to_match, 
+		match, get_idx,
+
+		# Operators
+		==, ≈, ∈, ∪, ∩, ⊆
 
 #######################################
 # Includes
