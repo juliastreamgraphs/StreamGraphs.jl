@@ -142,8 +142,8 @@ end
 mutable struct Link <: StreamObject
     name::AbstractString
     presence::Intervals
-    from::Node
-    to::Node
+    from::AbstractString
+    to::AbstractString
     weight::Float64
 end
 
@@ -157,10 +157,44 @@ end
 ∩(a::StreamObject,b::StreamObject)=a.presence ∩ b.presence
 ∪(a::StreamObject,b::StreamObject)=a.presence ∪ b.presence
 
+duration(o::StreamObject)=length(o.presence)
+
+# --- Operations on Nodes ---
+function merge(n1::Node,n2::Node)
+    if n1.name!=n2.name
+        throw("Cannot merge nodes with different names...")
+    end
+    return Node(n1.name, n1 ∪ n2)
+end
+
+function merge!(n1::Node,n2::Node)
+    if n1.name!=n2.name
+        throw("Cannot merge nodes with different names...")
+    end
+    n1.presence = n1 ∪ n2
+end
+
 # --- Operations on Links ---
 from_match(l1::Link,l2::Link)=(l1.from==l2.from)
+from_match(name::AbstractString,l::Link)=(name==l.from)
 to_match(l1::Link,l2::Link)=(l1.to==l2.to)
+to_match(name::AbstractString,l::Link)=(name==l.to)
 match(l1::Link,l2::Link)=from_match(l1,l2)&to_match(l1,l2)
+match(from::AbstractString,to::AbstractString,l::Link)=from_match(from,l)&to_match(to,l)
+
+function merge(l1::Link,l2::Link)
+    if !match(l1,l2)
+        throw("Cannot merge links with different end points...")
+    end
+    return Link(l1.name, l1 ∪ l2, l1.from, l1.to, l1.weight)
+end
+
+function merge!(l1::Link,l2::Link)
+    if !match(l1,l2)
+        throw("Cannot merge links with different end points...")
+    end
+    l1.presence = l1 ∪ l2
+end
 
 # --- Operations on Vectors of Nodes ---
 get_idx(n::Node,a::Vector{Node})=findall(i->i==n,a)
@@ -208,8 +242,11 @@ end
 
 # --- Operations on Vectors of Links ---
 from_match(l1::Link,l::Vector{Link})=findall(x->from_match(x,l1),l)
+from_match(name::AbstractString,l::Vector{Link})=findall(x->from_match(name,x),l)
 to_match(l1::Link,l::Vector{Link})=findall(x->to_match(x,l1),l)
+to_match(name::AbstractString,l::Vector{Link})=findall(x->to_match(name,x),l)
 match(l1::Link,l::Vector{Link})=findall(x->match(x,l1),l)
+match(from::AbstractString,to::AbstractString,l::Vector{Link})=findall(x->match(from,to,x),l)
 
 get_idx(l::Link,a::Vector{Link})=findall(i->i==l,a)
 get_idx(name::AbstractString,a::Vector{Link})=findall(i->i.name==name,a)
@@ -263,6 +300,9 @@ struct LinkStream <: AbstractStream
     E::Vector{Link}
 end
 
+LinkStream(name) = LinkStream(name, Intervals([]), Set(), [])
+LinkStream(name,T) = LinkStream(name, T, Set(), [])
+
 ==(ls1::LinkStream,ls2::LinkStream)=(ls1.T==ls2.T)&(ls1.V==ls2.V)&(ls1.E==ls2.E)
 
 struct StreamGraph <: AbstractStream
@@ -288,3 +328,100 @@ end
 ∩(s1::StreamGraph,s2::StreamGraph)=StreamGraph("$s1.name n $s2.name", s1.T ∩ s2.T, s1.V ∩ s2.V, s1.W ∩ s2.W, s1.E ∩ s2.E)
 ∪(ls1::LinkStream,ls2::LinkStream)=LinkStream("$ls1.name u $ls2.name", ls1.T ∪ ls2.T, ls1.V ∪ ls2.V, ls1.E ∪ ls2.E)
 ∪(s1::StreamGraph,s2::StreamGraph)=StreamGraph("$s1.name u $s2.name", s1.T ∪ s2.T, s1.V ∪ s2.V, s1.W ∪ s2.W, s1.E ∪ s2.E)
+
+function is_connected(s::AbstractStream, a::AbstractString, b::AbstractString, t::Float64)
+    idx = match(a,b,s.E)
+    append!(idx,match(b,a,s.E))
+    if length(idx)==0
+        return false
+    elseif length(idx)==1
+        return t ∈ s.E[idx][1]
+    else
+        throw("More than one link with end points $a and $b...")
+    end
+end
+
+# ----------- ADDING THINGS TO STREAMS -------------
+#
+function add_node!(ls::LinkStream, n::AbstractString)
+    push!(ls.V,n)
+end
+
+function add_node!(s::StreamGraph, n::Node)
+    idx=get_idx(n.name,s)
+    if length(idx)==0
+        push!(s.V,n.name)
+        push!(s.W,n)
+    elseif length(idx)==1
+        merge!(s.W[idx][1],n)
+    else
+        throw("More than one node named $n.name in stream $s.name...")
+    end
+end
+
+function add_link!(s::AbstractStream, l::Link)
+    idx=match(l,s.E)
+    if length(idx)==0
+        push!(s.E,l)
+    elseif length(idx)==1
+        merge!(s.E[idx][1],l)
+    else
+        throw("More than one link with end points ($l.from,$l.to)...")
+    end
+end
+
+function record!(ls::LinkStream, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
+    if (t0,t1) ⊈ ls
+        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
+    end
+    if from ∉ ls
+        add_node!(ls,from)
+    end
+    if to ∉ ls
+        add_node!(ls,to)
+    end
+    new = Link("$from to $to", Intervals([(t0,t1)]), from, to, 1)
+    add_link!(ls,new)
+end
+
+# ----------- READ FROM FILES -------------
+#
+function load!(s::AbstractStream, f::AbstractString)
+    open(f) do file
+        for line in eachline(file)
+            t0,t1,u,v = split(strip(line)," ")
+            t0 = parse(Float64,t0)
+            t1 = parse(Float64,t1)
+            record!(s,t0,t1,u,v)
+        end
+    end
+end
+
+# ----------- METRICS OF STREAMS -------------
+#
+duration(s::AbstractStream)=length(s.T)
+node_duration(ls::LinkStream)=duration(ls)
+
+function node_duration(s::StreamGraph)
+    if length(s.W)!=0
+        return sum([duration(n) for n in s.W]) / length(s.V)
+    else
+        throw("There is 0 node in stream $s.name...")
+    end
+end
+
+function link_duration(s::AbstractStream)
+    if length(s.E)!=0
+        return 2 * sum([duration(l) for l in s.E]) / (length(s.V)*(length(s.V)-1))
+    else
+        throw("There is 0 link in stream $s.name...")
+    end
+end
+
+function contribution(s::AbstractStream, o::StreamObject)
+    if duration(s)!=0
+        return duration(o) / duration(s)
+    else
+        throw("Stream $s.name has no duration...")
+    end
+end
