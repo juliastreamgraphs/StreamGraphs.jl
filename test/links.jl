@@ -33,9 +33,6 @@ L1 = [l1,l2,l3]
 @test get_idx(0.4,L1) == [1]
 @test get_idx(0.55,L1) == [1,2,3]
 @test get_idx(1.0001,L1) == []
-@test l1 ⊆ L1
-@test Link("a to b", Intervals([(0.4,0.5)]), a, b, .5) ⊆ L1
-@test Link("a to b", Intervals([(0.4,0.7)]), a, b, .5) ⊈ L1
 L2 = [l1,l3]
 @test L1 ∩ L2 == [l1,l3]
 @test L1 ∪ L2 == [l1,l2,l3]
