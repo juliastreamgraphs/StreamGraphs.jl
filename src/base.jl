@@ -513,7 +513,13 @@ function density(ls::LinkStream, n1::AbstractString, n2::AbstractString)
     else
         throw("More than one link in stream $ls.name with from name $n1 and to name $n2.")
     end
-end# ----------- JUMPS -------------
+end
+
+function coverage(ls::LinkStream)
+    return 1
+end
+
+# ----------- JUMPS -------------
 #
 struct Jump
     t::Float64
