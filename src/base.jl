@@ -1,5 +1,6 @@
 abstract type StreamObject end
 abstract type AbstractStream end
+abstract type AbstractPath end
 
 # ----------- TUPLES -------------
 #
@@ -528,3 +529,82 @@ struct DurationJump
 end
 
 duration(j::DurationJump)=j.δ
+
+# ----------- PATHS -------------
+#
+mutable struct Path <: AbstractPath
+    jumps::Vector{Jump}
+end
+
+Path()=Path([])
+
+mutable struct DurationPath <: AbstractPath
+    jumps::Vector{DurationJump}
+end
+
+DurationPath()=DurationPath([])
+
+start(p::AbstractPath)= length(p.jumps) > 0 ? p.jumps[1].t : 0
+finish(p::Path)=length(p.jumps) > 0 ? p.jumps[end].t : 0
+finish(p::DurationPath)=length(p.jumps) > 0 ? p.jumps[end].t + p.jumps[end].δ : 0
+length(p::AbstractPath)=length(p.jumps)
+duration(p::AbstractPath)=finish(p)-start(p)
+
+function is_valid(p::Path)
+    if length(p)<=1
+        return true
+    end
+    for cpt in zip(p.jumps[1:end-1],p.jumps[2:end])
+        if cpt[1].t > cpt[2].t || cpt[1].to != cpt[2].from
+            return false
+        end
+    end
+    return true
+end
+
+function is_valid(p::DurationPath)
+    if length(p)<=1
+        return true
+    end
+    for cpt in zip(p.jumps[1:end-1],p.jumps[2:end])
+        if cpt[1].t + cpt[1].δ > cpt[2].t || cpt[1].to != cpt[2].from
+            return false
+        end
+    end
+    return true
+end
+
+function +(p1::T,p2::T) where T <: AbstractPath
+    if !is_valid(T([p1.jumps[end],p2.jumps[1]]))
+        throw("Cannot concat paths.")
+    end
+    p = deepcopy(p1)
+    for jump in p2.jumps
+        push!(p.jumps,jump)
+    end
+    return p
+end
+
+function push(p::AbstractPath,jump::Jump)
+    p2 = deepcopy(p)
+    push!(p2.jumps,jump)
+    if is_valid(p2)
+        return p2
+    else
+        throw("Cannot add jump $jump to path because this will break the path feature.")
+    end
+end
+
+function ⊆(p1::T,p2::T) where T <: AbstractPath
+    lp1 = length(p1)
+    lp2 = length(p2)
+    if lp1 > lp2
+        return false
+    end
+    for i in range(1,lp2-lp1)
+        if p2.jumps[i:i+lp1-1] == p1.jumps
+            return true
+        end
+    end
+    return false
+end
