@@ -30,3 +30,13 @@ end
     @info "Check Streams"
     include("streams.jl")
 end
+
+@testset "Jump Tests" begin
+    @info "Check Jumps"
+    include("jumps.jl")
+end
+
+@testset "Path Tests" begin
+    @info "Check Paths"
+    include("paths.jl")
+end

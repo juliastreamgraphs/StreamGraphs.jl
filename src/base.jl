@@ -1,6 +1,6 @@
 abstract type StreamObject end
-abstract type Node <: StreamObject end
-abstract type Stream end
+abstract type AbstractStream end
+abstract type AbstractPath end
 
 # ----------- TUPLES -------------
 #
@@ -129,70 +129,87 @@ end
 ⊆(i1::Intervals,i2::Intervals)=(i1 ∩ i2)==clean(i1)
 ⊆(i1::Tuple{Float64,Float64},i2::Intervals)=Intervals([i1]) ⊆ i2
 
-# ----------- STATIC NODE DEFINITIONS -------------
+# ----------- NODE DEFINITIONS -------------
 #
-"""SNode implements static nodes which have no dynamic."""
-mutable struct SNode <: Node
-    name::AbstractString
-end
-
-"""Two static nodes are equal if their names are the same."""
-==(a::SNode,b::SNode)=a.name==b.name
-
-# ----------- DYNAMIC NODE DEFINITIONS -------------
-#
-"""DNode implements dynamic nodes."""
-mutable struct DNode <: Node
+mutable struct Node <: StreamObject
     name::AbstractString
     presence::Intervals
 end
 
-# --- Operations on DNodes ---
-==(a::DNode,b::DNode)=(a.name==b.name)&(a.presence==b.presence)
-⊆(a::StreamObject,b::StreamObject)=a.presence ⊆ b.presence
+==(a::Node,b::Node)=(a.name==b.name)&(a.presence==b.presence)
+
+# ----------- LINK DEFINITIONS -------------
+#
+mutable struct Link <: StreamObject
+    name::AbstractString
+    presence::Intervals
+    from::AbstractString
+    to::AbstractString
+    weight::Float64
+end
+
+==(l1::Link,l2::Link)=(l1.name==l2.name)&(l1.presence==l2.presence)&(l1.from==l2.from)&(l1.to==l2.to)&(l1.weight==l2.weight)
+
+# --- Operations on StreamObjects ---
 ⊆(i::Intervals,o::StreamObject)=i ⊆ o.presence
 ⊆(i::Tuple{Float64,Float64},o::StreamObject)=i ⊆ o.presence
-∈(t::Float64,n::StreamObject)=t ∈ n.presence
+⊆(a::StreamObject,b::StreamObject)=a.presence ⊆ b.presence
+∈(t::Float64,o::StreamObject)=t ∈ o.presence
 ∩(a::StreamObject,b::StreamObject)=a.presence ∩ b.presence
 ∪(a::StreamObject,b::StreamObject)=a.presence ∪ b.presence
 
-# --- Operations on Arrays of DNodes ---
-get_idx(n::DNode,a::Array{DNode,1})=findall(i->i==n,a)
-get_idx(name::AbstractString,a::Array{DNode,1})=findall(i->i.name==name,a)
-get_idx(t::Float64,a::Array{DNode,1})=findall(i->t ∈ i,a)
+duration(o::StreamObject)=length(o.presence)
 
-function ==(a::Array{DNode,1},b::Array{DNode,1})
-    if length(a) != length(b)
-        return false
+# --- Operations on Nodes ---
+function merge(n1::Node,n2::Node)
+    if n1.name!=n2.name
+        throw("Cannot merge nodes with different names...")
     end
-    return all([x[1]==x[2] for x in zip(a,b)])
+    return Node(n1.name, n1 ∪ n2)
 end
 
-function ⊆(n::DNode,a::Array{DNode,1})
-    idx = get_idx(n.name,a)
-    if length(idx) == 0
-        return false
+function merge!(n1::Node,n2::Node)
+    if n1.name!=n2.name
+        throw("Cannot merge nodes with different names...")
     end
-    return all([n ⊆ a[i] for i in idx])
+    n1.presence = n1 ∪ n2
 end
 
-function ⊆(a::Array{DNode,1},b::Array{DNode,1})
-    for n in a
-        if n ⊈ b
-            return false
-        end
+# --- Operations on Links ---
+from_match(l1::Link,l2::Link)=(l1.from==l2.from)
+from_match(name::AbstractString,l::Link)=(name==l.from)
+to_match(l1::Link,l2::Link)=(l1.to==l2.to)
+to_match(name::AbstractString,l::Link)=(name==l.to)
+match(l1::Link,l2::Link)=from_match(l1,l2)&to_match(l1,l2)
+match(from::AbstractString,to::AbstractString,l::Link)=from_match(from,l)&to_match(to,l)
+
+function merge(l1::Link,l2::Link)
+    if !match(l1,l2)
+        throw("Cannot merge links with different end points...")
     end
-    return true
+    return Link(l1.name, l1 ∪ l2, l1.from, l1.to, l1.weight)
 end
 
-function ∪(a::Array{DNode,1},b::Array{DNode,1})
-    c = DNode[]
+function merge!(l1::Link,l2::Link)
+    if !match(l1,l2)
+        throw("Cannot merge links with different end points...")
+    end
+    l1.presence = l1 ∪ l2
+end
+
+# --- Operations on Vectors of Nodes ---
+get_idx(n::Node,a::Vector{Node})=findall(i->i==n,a)
+get_idx(name::AbstractString,a::Vector{Node})=findall(i->i.name==name,a)
+get_idx(t::Float64,a::Vector{Node})=findall(i->t ∈ i,a)
+
+function ∪(a::Vector{Node},b::Vector{Node})
+    c = Vector(Node[])
     for aa in a
         idx = get_idx(aa.name,b)
         if length(idx)==0
-            new = DNode(aa.name, aa.presence)
+            new = Node(aa.name, aa.presence)
         elseif length(idx)==1
-            new = DNode(aa.name, aa ∪ b[idx][1])
+            new = Node(aa.name, aa ∪ b[idx][1])
         else
             throw("More than one node named $aa.name in array.")
         end
@@ -201,7 +218,7 @@ function ∪(a::Array{DNode,1},b::Array{DNode,1})
     for bb in b
         idx = get_idx(bb,a)
         if length(idx)==0
-            new = DNode(bb.name, bb.presence)
+            new = Node(bb.name, bb.presence)
             push!(c,new)
         elseif length(idx)!=1
             throw("More than one node named $aa.name in array.")
@@ -210,12 +227,12 @@ function ∪(a::Array{DNode,1},b::Array{DNode,1})
     return c
 end
 
-function ∩(a::Array{DNode,1},b::Array{DNode,1})
-    c = DNode[]
+function ∩(a::Vector{Node},b::Vector{Node})
+    c = Vector(Node[])
     for aa in a
         idx = get_idx(aa.name,b)
         if length(idx)==1
-            new = DNode(aa.name, aa ∩ b[idx][1])
+            new = Node(aa.name, aa ∩ b[idx][1])
             push!(c,new)
         elseif length(idx)!=0
             throw("More than one node named $aa.name in array.")
@@ -224,57 +241,20 @@ function ∩(a::Array{DNode,1},b::Array{DNode,1})
     return c
 end
 
-# ----------- LINK DEFINITIONS -------------
-#
-mutable struct Link <: StreamObject
-    name::AbstractString
-    presence::Intervals
-    from::Node
-    to::Node
-    weight::Float64
-end
+# --- Operations on Vectors of Links ---
+from_match(l1::Link,l::Vector{Link})=findall(x->from_match(x,l1),l)
+from_match(name::AbstractString,l::Vector{Link})=findall(x->from_match(name,x),l)
+to_match(l1::Link,l::Vector{Link})=findall(x->to_match(x,l1),l)
+to_match(name::AbstractString,l::Vector{Link})=findall(x->to_match(name,x),l)
+match(l1::Link,l::Vector{Link})=findall(x->match(x,l1),l)
+match(from::AbstractString,to::AbstractString,l::Vector{Link})=findall(x->match(from,to,x),l)
 
-# --- Operations on Links ---
-==(l1::Link,l2::Link)=(l1.name==l2.name)&(l1.presence==l2.presence)&(l1.from==l2.from)&(l1.to==l2.to)&(l1.weight==l2.weight)
-from_match(l1::Link,l2::Link)=(l1.from==l2.from)
-to_match(l1::Link,l2::Link)=(l1.to==l2.to)
-match(l1::Link,l2::Link)=from_match(l1,l2)&to_match(l1,l2)
+get_idx(l::Link,a::Vector{Link})=findall(i->i==l,a)
+get_idx(name::AbstractString,a::Vector{Link})=findall(i->i.name==name,a)
+get_idx(t::Float64,a::Vector{Link})=findall(i->t ∈ i,a)
 
-# --- Operations on Arrays of Links ---
-from_match(l1::Link,l::Array{Link,1})=findall(x->from_match(x,l1),l)
-to_match(l1::Link,l::Array{Link,1})=findall(x->to_match(x,l1),l)
-match(l1::Link,l::Array{Link,1})=findall(x->match(x,l1),l)
-
-get_idx(l::Link,a::Array{Link,1})=findall(i->i==l,a)
-get_idx(name::AbstractString,a::Array{Link,1})=findall(i->i.name==name,a)
-get_idx(t::Float64,a::Array{Link,1})=findall(i->t ∈ i,a)
-
-function ==(a::Array{Link,1},b::Array{Link,1})
-    if length(a) != length(b)
-        return false
-    end
-    return all([x[1]==x[2] for x in zip(a,b)])
-end
-
-function ⊆(l::Link,a::Array{Link,1})
-    idx = get_idx(l.name,a)
-    if length(idx) == 0
-        return false
-    end
-    return all([l ⊆ a[i] for i in idx])
-end
-
-function ⊆(a::Array{Link,1},b::Array{Link,1})
-    for n in a
-        if n ⊈ b
-            return false
-        end
-    end
-    return true
-end
-
-function ∪(a::Array{Link,1},b::Array{Link,1})
-    c = Link[]
+function ∪(a::Vector{Link},b::Vector{Link})
+    c = Vector(Link[])
     for aa in a
         idx = match(aa,b)
         if length(idx)==0
@@ -298,8 +278,8 @@ function ∪(a::Array{Link,1},b::Array{Link,1})
     return c
 end
 
-function ∩(a::Array{Link,1},b::Array{Link,1})
-    c = Link[]
+function ∩(a::Vector{Link},b::Vector{Link})
+    c = Vector(Link[])
     for aa in a
         idx = match(aa,b)
         if length(idx)==1
@@ -314,31 +294,323 @@ end
 
 # ----------- STREAM DEFINITIONS -------------
 #
-struct LinkStream <: Stream
+struct LinkStream <: AbstractStream
     name::AbstractString
-    tstart::Float64
-    tend::Float64
-    nodes::Array{SNode, 1}
-    links::Array{Link, 1}
-    from_to_links::Dict{AbstractString,Array{Int64,1}}
-    to_to_links::Dict{AbstractString,Array{Int64,1}}
+    T::Intervals
+    V::Set{AbstractString}
+    E::Vector{Link}
 end
 
-struct StreamGraph <: Stream
+LinkStream(name) = LinkStream(name, Intervals([]), Set(), [])
+LinkStream(name,T) = LinkStream(name, T, Set(), [])
+
+==(ls1::LinkStream,ls2::LinkStream)=(ls1.T==ls2.T)&(ls1.V==ls2.V)&(ls1.E==ls2.E)
+
+struct StreamGraph <: AbstractStream
     name::AbstractString
-    tstart::Float64
-    tend::Float64
-    nodes::Array{DNode, 1}
-    links::Array{Link, 1}
-    from_to_links::Dict{AbstractString,Array{Int64,1}}
-    to_to_links::Dict{AbstractString,Array{Int64,1}}
+    T::Intervals
+    V::Set{AbstractString}
+    W::Vector{Node}
+    E::Vector{Link}
 end
 
-==(s1::Stream,s2::Stream)=(s1.name==s2.name)&(s1.tstart==s2.tstart)&(s1.tend==s2.tend)&(s1.nodes==s2.nodes)&(s1.links==s2.links)
-∈(t::Float64,s::Stream)=s.tstart<=t<=s.tend
-∈(n::Node,s::Stream)=n ∈ s.nodes
-∈(l::Link,s::Stream)=l ∈ s.links
-⊆(t::Tuple{Float64,Float64},s::Stream)=t ⊆ Intervals([(s.tstart,s.tend)])
-⊆(n::Array{DNode},s::Stream)=all([nn ⊆ s.nodes for nn in n])
-⊆(l::Array{Link},s::Stream)=all([ll ⊆ s.links for ll in l])
-⊆(s1::Stream,s2::Stream)=(s2.tstart<=s1.tstart<=s1.tend<=s2.tend)&(s1.nodes ⊆ s2)&(s1.links ⊆ s2)
+StreamGraph(name) = StreamGraph(name, Intervals([]), Set(), [], [])
+StreamGraph(name,T) = StreamGraph(name, T, Set(), [], [])
+
+==(s1::StreamGraph,s2::StreamGraph)=(s1.T==s2.T)&(s1.V==s2.V)&(s1.W==s2.W)&(s1.E==s2.E)
+
+# ----------- OPERATIONS ON STREAMS -------------
+#
+∈(t::Float64,s::AbstractStream)=t ∈ s.T
+∈(n::Node,s::StreamGraph)=n ∈ s.W
+∈(l::Link,s::AbstractStream)=l ∈ s.E
+∈(n::AbstractString,s::AbstractStream)=n ∈ s.V
+⊆(t::Tuple{Float64,Float64},s::AbstractStream)=t ⊆ s.T
+⊆(ls1::LinkStream,ls2::LinkStream)=(ls1.T ⊆ ls2.T)&(ls1.V ⊆ ls2.V)&(ls1.E ⊆ ls2.E)
+⊆(s1::StreamGraph,s2::StreamGraph)=(s1.T ⊆ s2.T)&(s1.V ⊆ s2.V)&(s1.W ⊆ s2.W)&(s1.E ⊆ s2.E)
+∩(ls1::LinkStream,ls2::LinkStream)=LinkStream("$ls1.name n $ls2.name", ls1.T ∩ ls2.T, ls1.V ∩ ls2.V, ls1.E ∩ ls2.E)
+∩(s1::StreamGraph,s2::StreamGraph)=StreamGraph("$s1.name n $s2.name", s1.T ∩ s2.T, s1.V ∩ s2.V, s1.W ∩ s2.W, s1.E ∩ s2.E)
+∪(ls1::LinkStream,ls2::LinkStream)=LinkStream("$ls1.name u $ls2.name", ls1.T ∪ ls2.T, ls1.V ∪ ls2.V, ls1.E ∪ ls2.E)
+∪(s1::StreamGraph,s2::StreamGraph)=StreamGraph("$s1.name u $s2.name", s1.T ∪ s2.T, s1.V ∪ s2.V, s1.W ∪ s2.W, s1.E ∪ s2.E)
+
+function is_connected(s::AbstractStream, a::AbstractString, b::AbstractString, t::Float64)
+    idx = match(a,b,s.E)
+    append!(idx,match(b,a,s.E))
+    if length(idx)==0
+        return false
+    elseif length(idx)==1
+        return t ∈ s.E[idx][1]
+    else
+        throw("More than one link with end points $a and $b...")
+    end
+end
+
+# ----------- ADDING THINGS TO STREAMS -------------
+#
+function add_node!(ls::LinkStream, n::AbstractString)
+    push!(ls.V,n)
+end
+
+function add_node!(s::StreamGraph, n::Node)
+    idx=get_idx(n.name,s.W)
+    if length(idx)==0
+        push!(s.V,n.name)
+        push!(s.W,n)
+    elseif length(idx)==1
+        merge!(s.W[idx][1],n)
+    else
+        throw("More than one node named $n.name in stream $s.name...")
+    end
+end
+
+function add_link!(s::AbstractStream, l::Link)
+    idx=match(l,s.E)
+    if length(idx)==0
+        push!(s.E,l)
+    elseif length(idx)==1
+        merge!(s.E[idx][1],l)
+    else
+        throw("More than one link with end points ($l.from,$l.to)...")
+    end
+end
+
+function record!(ls::LinkStream, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
+    if (t0,t1) ⊈ ls
+        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
+    end
+    if from ∉ ls
+        add_node!(ls,from)
+    end
+    if to ∉ ls
+        add_node!(ls,to)
+    end
+    new = Link("$from to $to", Intervals([(t0,t1)]), from, to, 1)
+    add_link!(ls,new)
+end
+
+function record!(s::StreamGraph, t0::Float64, t1::Float64, n::AbstractString)
+    if (t0,t1) ⊈ s
+        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
+    end
+    new = Node(n,Intervals([(t0,t1)]))
+    if n ∉ s
+        add_node!(s,new)
+    else
+        idx=get_idx(n,s.W)
+        if length(idx)==1
+            merge!(s.W[idx][1],new)
+        else
+            throw("Problem adding node $n in stream $s.name.")
+        end
+    end
+end
+
+function record!(s::StreamGraph, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
+    if (t0,t1) ⊈ s
+        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
+    end
+    if from ∉ s
+        add_node!(s,from)
+    end
+    if to ∉ s
+        add_node!(s,to)
+    end
+    new = Link("$from to $to", Intervals([(t0,t1)]), from, to, 1)
+    add_link!(ls,new)
+end
+
+# ----------- READ FROM FILES -------------
+#
+function load!(s::AbstractStream, f::AbstractString; Δ=1)
+    open(f) do file
+        for line in eachline(file)
+            t0,t1,u,v = parse_line(line;Δ=Δ)
+            record!(s,t0,t1,u,v)
+        end
+    end
+end
+
+function parse_line(line::AbstractString; Δ=1)
+    line = strip(line)
+    elements = split(line," ")
+    if length(elements)==4
+        t0,t1,u,v = elements
+        t0 = parse(Float64,t0)
+        t1 = parse(Float64,t1)
+    elseif length(elements)==3
+        t,u,v = elements
+        t = parse(Float64,t)
+        t0 = t - Δ / 2
+        t1 = t + Δ /2
+    else
+        throw("Unknown line format: $line")
+    end
+    return t0,t1,u,v
+end
+
+
+# ----------- METRICS OF STREAMS -------------
+#
+duration(s::AbstractStream)=length(s.T)
+node_duration(ls::LinkStream)=duration(ls)
+
+function node_duration(s::StreamGraph)
+    if length(s.W)!=0
+        return sum([duration(n) for n in s.W]) / length(s.V)
+    else
+        throw("There is 0 node in stream $s.name...")
+    end
+end
+
+function link_duration(s::AbstractStream)
+    if length(s.E)!=0
+        return 2 * sum([duration(l) for l in s.E]) / (length(s.V)*(length(s.V)-1))
+    else
+        throw("There is 0 link in stream $s.name...")
+    end
+end
+
+function contribution(s::AbstractStream, o::StreamObject)
+    if duration(s)!=0
+        return duration(o) / duration(s)
+    else
+        throw("Stream $s.name has no duration...")
+    end
+end
+
+contribution(ls::LinkStream, node_name::AbstractString)=1
+
+function contribution(s::StreamGraph, node_name::AbstractString)
+    idx=get_idx(node_name,s.W)
+    if length(idx)==1
+        return contribution(s,s.W[idx][1])
+    else
+        throw("Cannot compute contribution of node $node_name.")
+    end
+end
+
+function contribution(s::AbstractStream, from::AbstractString, to::AbstractString)
+    idx=match(from,to,s.E)
+    if length(idx)==1
+        return contribution(s,s.E[idx][1])
+    else
+        throw("Cannot compute contribution of link ($from,$to).")
+    end
+end
+
+number_of_nodes(s::StreamGraph)=sum([contribution(s,n) for n in s.W])
+number_of_nodes(ls::LinkStream)=length(ls.V)
+number_of_links(s::AbstractStream)=sum([contribution(s,l) for l in s.E])
+
+density(ls::LinkStream)=2 * sum([duration(l) for l in ls.E]) / (length(ls.V)*(length(ls.V)-1)*duration(ls)) 
+
+function density(ls::LinkStream, n1::AbstractString, n2::AbstractString)
+    idx_link = match(n1,n2,ls.E)
+    if length(idx_link) == 1
+        return duration(ls.E[idx_link][1]) / duration(ls)
+    elseif length(idx_link) == 0
+        return 0
+    else
+        throw("More than one link in stream $ls.name with from name $n1 and to name $n2.")
+    end
+end
+
+function coverage(ls::LinkStream)
+    return 1
+end
+
+# ----------- JUMPS -------------
+#
+struct Jump
+    t::Float64
+    from::AbstractString
+    to::AbstractString
+end
+
+struct DurationJump
+    t::Float64
+    from::AbstractString
+    to::AbstractString
+    δ::Float64
+end
+
+duration(j::DurationJump)=j.δ
+
+# ----------- PATHS -------------
+#
+mutable struct Path <: AbstractPath
+    jumps::Vector{Jump}
+end
+
+Path()=Path([])
+
+mutable struct DurationPath <: AbstractPath
+    jumps::Vector{DurationJump}
+end
+
+DurationPath()=DurationPath([])
+
+start(p::AbstractPath)= length(p.jumps) > 0 ? p.jumps[1].t : 0
+finish(p::Path)=length(p.jumps) > 0 ? p.jumps[end].t : 0
+finish(p::DurationPath)=length(p.jumps) > 0 ? p.jumps[end].t + p.jumps[end].δ : 0
+length(p::AbstractPath)=length(p.jumps)
+duration(p::AbstractPath)=finish(p)-start(p)
+
+function is_valid(p::Path)
+    if length(p)<=1
+        return true
+    end
+    for cpt in zip(p.jumps[1:end-1],p.jumps[2:end])
+        if cpt[1].t > cpt[2].t || cpt[1].to != cpt[2].from
+            return false
+        end
+    end
+    return true
+end
+
+function is_valid(p::DurationPath)
+    if length(p)<=1
+        return true
+    end
+    for cpt in zip(p.jumps[1:end-1],p.jumps[2:end])
+        if cpt[1].t + cpt[1].δ > cpt[2].t || cpt[1].to != cpt[2].from
+            return false
+        end
+    end
+    return true
+end
+
+function +(p1::T,p2::T) where T <: AbstractPath
+    if !is_valid(T([p1.jumps[end],p2.jumps[1]]))
+        throw("Cannot concat paths.")
+    end
+    p = deepcopy(p1)
+    for jump in p2.jumps
+        push!(p.jumps,jump)
+    end
+    return p
+end
+
+function push(p::AbstractPath,jump::Jump)
+    p2 = deepcopy(p)
+    push!(p2.jumps,jump)
+    if is_valid(p2)
+        return p2
+    else
+        throw("Cannot add jump $jump to path because this will break the path feature.")
+    end
+end
+
+function ⊆(p1::T,p2::T) where T <: AbstractPath
+    lp1 = length(p1)
+    lp2 = length(p2)
+    if lp1 > lp2
+        return false
+    end
+    for i in range(1,lp2-lp1)
+        if p2.jumps[i:i+lp1-1] == p1.jumps
+            return true
+        end
+    end
+    return false
+end
