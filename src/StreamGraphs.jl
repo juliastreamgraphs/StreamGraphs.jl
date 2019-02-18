@@ -23,7 +23,7 @@ export
 
 		# Stream components
 		Intervals, Node, Link, StreamObject, AbstractStream, 
-		LinkStream, StreamGraph,
+		LinkStream, StreamGraph, Jump, DurationJump,
 
 		# Adding to streams
 		add_node!, add_link!, record!, load!, parse_line,

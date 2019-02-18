@@ -512,4 +512,19 @@ function density(ls::LinkStream, n1::AbstractString, n2::AbstractString)
     else
         throw("More than one link in stream $ls.name with from name $n1 and to name $n2.")
     end
+end# ----------- JUMPS -------------
+#
+struct Jump
+    t::Float64
+    from::AbstractString
+    to::AbstractString
 end
+
+struct DurationJump
+    t::Float64
+    from::AbstractString
+    to::AbstractString
+    δ::Float64
+end
+
+duration(j::DurationJump)=j.δ
