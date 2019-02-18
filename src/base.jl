@@ -476,3 +476,40 @@ function contribution(s::AbstractStream, o::StreamObject)
         throw("Stream $s.name has no duration...")
     end
 end
+
+contribution(ls::LinkStream, node_name::AbstractString)=1
+
+function contribution(s::StreamGraph, node_name::AbstractString)
+    idx=get_idx(node_name,s.W)
+    if length(idx)==1
+        return contribution(s,s.W[idx][1])
+    else
+        throw("Cannot compute contribution of node $node_name.")
+    end
+end
+
+function contribution(s::AbstractStream, from::AbstractString, to::AbstractString)
+    idx=match(from,to,s.E)
+    if length(idx)==1
+        return contribution(s,s.E[idx][1])
+    else
+        throw("Cannot compute contribution of link ($from,$to).")
+    end
+end
+
+number_of_nodes(s::StreamGraph)=sum([contribution(s,n) for n in s.W])
+number_of_nodes(ls::LinkStream)=length(ls.V)
+number_of_links(s::AbstractStream)=sum([contribution(s,l) for l in s.E])
+
+density(ls::LinkStream)=2 * sum([duration(l) for l in ls.E]) / (length(ls.V)*(length(ls.V)-1)*duration(ls)) 
+
+function density(ls::LinkStream, n1::AbstractString, n2::AbstractString)
+    idx_link = match(n1,n2,ls.E)
+    if length(idx_link) == 1
+        return duration(ls.E[idx_link][1]) / duration(ls)
+    elseif length(idx_link) == 0
+        return 0
+    else
+        throw("More than one link in stream $ls.name with from name $n1 and to name $n2.")
+    end
+end

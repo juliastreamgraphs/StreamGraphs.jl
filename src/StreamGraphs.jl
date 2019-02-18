@@ -30,6 +30,7 @@ export
 
 		# Durations
 		duration, node_duration, link_duration, contribution,
+		number_of_nodes, number_of_links, density,
 
 		# functions
 		count, length, merge, merge!, push, clean, from_match, to_match, 
