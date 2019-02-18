@@ -313,6 +313,9 @@ struct StreamGraph <: AbstractStream
     E::Vector{Link}
 end
 
+StreamGraph(name) = StreamGraph(name, Intervals([]), Set(), [], [])
+StreamGraph(name,T) = StreamGraph(name, T, Set(), [], [])
+
 ==(s1::StreamGraph,s2::StreamGraph)=(s1.T==s2.T)&(s1.V==s2.V)&(s1.W==s2.W)&(s1.E==s2.E)
 
 # ----------- OPERATIONS ON STREAMS -------------
@@ -348,7 +351,7 @@ function add_node!(ls::LinkStream, n::AbstractString)
 end
 
 function add_node!(s::StreamGraph, n::Node)
-    idx=get_idx(n.name,s)
+    idx=get_idx(n.name,s.W)
     if length(idx)==0
         push!(s.V,n.name)
         push!(s.W,n)
@@ -384,18 +387,66 @@ function record!(ls::LinkStream, t0::Float64, t1::Float64, from::AbstractString,
     add_link!(ls,new)
 end
 
+function record!(s::StreamGraph, t0::Float64, t1::Float64, n::AbstractString)
+    if (t0,t1) ⊈ s
+        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
+    end
+    new = Node(n,Intervals([(t0,t1)]))
+    if n ∉ s
+        add_node!(s,new)
+    else
+        idx=get_idx(n,s.W)
+        if length(idx)==1
+            merge!(s.W[idx][1],new)
+        else
+            throw("Problem adding node $n in stream $s.name.")
+        end
+    end
+end
+
+function record!(s::StreamGraph, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
+    if (t0,t1) ⊈ s
+        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
+    end
+    if from ∉ s
+        add_node!(s,from)
+    end
+    if to ∉ s
+        add_node!(s,to)
+    end
+    new = Link("$from to $to", Intervals([(t0,t1)]), from, to, 1)
+    add_link!(ls,new)
+end
+
 # ----------- READ FROM FILES -------------
 #
-function load!(s::AbstractStream, f::AbstractString)
+function load!(s::AbstractStream, f::AbstractString; Δ=1)
     open(f) do file
         for line in eachline(file)
-            t0,t1,u,v = split(strip(line)," ")
-            t0 = parse(Float64,t0)
-            t1 = parse(Float64,t1)
+            t0,t1,u,v = parse_line(line;Δ=Δ)
             record!(s,t0,t1,u,v)
         end
     end
 end
+
+function parse_line(line::AbstractString; Δ=1)
+    line = strip(line)
+    elements = split(line," ")
+    if length(elements)==4
+        t0,t1,u,v = elements
+        t0 = parse(Float64,t0)
+        t1 = parse(Float64,t1)
+    elseif length(elements)==3
+        t,u,v = elements
+        t = parse(Float64,t)
+        t0 = t - Δ / 2
+        t1 = t + Δ /2
+    else
+        throw("Unknown line format: $line")
+    end
+    return t0,t1,u,v
+end
+
 
 # ----------- METRICS OF STREAMS -------------
 #

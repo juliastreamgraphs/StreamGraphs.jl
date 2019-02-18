@@ -62,3 +62,17 @@ s2 = StreamGraph("s1", Intervals([(0.0, 10.0)]), Set(["a","c"]), [a,c], [l2])
 @test (0.0,10.0) ⊆ s1
 @test (0.5,0.75) ⊆ s2
 @test (8.1,10.1) ⊈ s2
+
+s = StreamGraph("test", Intervals([(0.0,10.0)]))
+record!(s,0.0,10.0,"a")
+@test s.T == Intervals([(0.0,10.0)])
+@test duration(s) == 10.0
+@test s.V == Set(["a"])
+@test length(s.W) == 1
+@test duration(s.W[1]) == 10.0
+record!(s,0.0,4.0,"b")
+record!(s,5.0,10.0,"b")
+@test s.V == Set(["a","b"])
+@test length(s.W) == 2
+@test duration(s.W[1]) == 10.0
+@test duration(s.W[2]) == 9.0
