@@ -1,17 +1,40 @@
 abstract type StreamObject end
 abstract type AbstractStream end
+abstract type AbstractDirectedStream <: AbstractStream end
+abstract type AbstractUndirectedStream <: AbstractStream end
 abstract type AbstractPath end
+
+# ----------- SETS -------------
+#
+function ×(S1::Set{T},S2::Set{T}) where T
+    S=Set()
+    for s1 in S1
+        for s2 in S2
+            push!(S,(s1,s2))
+        end
+    end
+    S
+end
+
+function ⊗(S1::Set{T},S2::Set{T}) where T
+    S=Set()
+    for s1 in S1
+        for s2 in S2
+            if s1<s2
+                push!(S,(s1,s2))
+            elseif s2<s1
+                push!(S,(s2,s1))
+            end
+        end
+    end
+    S
+end
 
 # ----------- TUPLES -------------
 #
 # Equality between tuples of float64 is defined at 10^-6 rouding error
 ≈(a::Tuple{Float64,Float64},b::Tuple{Float64,Float64};atol::Real=10^-6)=≈(a[1],b[1],atol=atol)&&≈(a[2],b[2],atol=atol)
-function ≈(a::Array{Tuple{Float64,Float64}},b::Array{Tuple{Float64,Float64}};atol::Real=10^-6)
-    if length(a) != length(b)
-        return false
-    end
-    return all([x[1]≈x[2] for x in zip(a,b)])
-end
+≈(a::Array{Tuple{Float64,Float64}},b::Array{Tuple{Float64,Float64}};atol::Real=10^-6)=length(a)==length(b) ? all([x[1]≈x[2] for x in zip(a,b)]) : false
 
 # ----------- INTERVALS -------------
 #
@@ -23,6 +46,8 @@ mutable struct Intervals
     list::Array{Tuple{Float64,Float64},1}
 end
 
+Intervals()=Intervals([])
+    
 """
 Equality between two lists of intervals
 NOTE: Use approx here because of rounding errors in intervals.
@@ -62,34 +87,39 @@ end
 
 """Intersection between two list of intervals."""
 function ∩(i1::Intervals, i2::Intervals)
+    i1=clean(i1)
+    i2=clean(i2)
     l = []
-    n = 1
     components = vcat(i1.list,i2.list)
+    if length(components)==0
+        return Intervals()
+    end
     sort!(components)
-    push!(l, components[1])
-    popfirst!(components)
-    for c in components
+    push!(l, popfirst!(components))
+    while length(components)>0
         modif = false
+        c = popfirst!(components)
         if length(l) == 0
             push!(l,c)
             continue
         end
-        if c[2] <= l[end][2]
+        if c[2] < l[end][2]
+            push!(components,(c[2],l[end][2]))
             l[end] = (l[end][1],c[2])
             modif = true
         end
-        if c[1] <= l[end][2]
+        if l[end][2] >= c[1] >= l[end][1]
             l[end] = (c[1], l[end][2])
             modif = true
         end   
         if !modif
             pop!(l)
+        else
+            sort!(components)
         end
-        if n != length(components)
-            push!(l,c)
-        end
-        n = n + 1
+        push!(l,c)
     end
+    pop!(l)
     return clean(Intervals(l))
 end
 
@@ -294,129 +324,238 @@ end
 
 # ----------- STREAM DEFINITIONS -------------
 #
-struct LinkStream <: AbstractStream
+struct LinkStream <: AbstractUndirectedStream
     name::AbstractString
     T::Intervals
     V::Set{AbstractString}
-    E::Vector{Link}
+    E::Dict{AbstractString,Dict{AbstractString,Link}}
 end
 
-LinkStream(name) = LinkStream(name, Intervals([]), Set(), [])
-LinkStream(name,T) = LinkStream(name, T, Set(), [])
-
-==(ls1::LinkStream,ls2::LinkStream)=(ls1.T==ls2.T)&(ls1.V==ls2.V)&(ls1.E==ls2.E)
-
-struct StreamGraph <: AbstractStream
+struct DirectedLinkStream <: AbstractDirectedStream
     name::AbstractString
     T::Intervals
     V::Set{AbstractString}
-    W::Vector{Node}
-    E::Vector{Link}
+    E::Dict{AbstractString,Dict{AbstractString,Link}}
 end
 
-StreamGraph(name) = StreamGraph(name, Intervals([]), Set(), [], [])
-StreamGraph(name,T) = StreamGraph(name, T, Set(), [], [])
+#Base.getindex(ls::LinkStream, name::AbstractString)=haskey(ls.E,name) ? ls.E[name] : []
+#Base.getindex(ls::LinkStream, t::Float64)=[l for (k,v) in ls.E for (kk,l) in v if t ∈ l]
 
-==(s1::StreamGraph,s2::StreamGraph)=(s1.T==s2.T)&(s1.V==s2.V)&(s1.W==s2.W)&(s1.E==s2.E)
+struct StreamGraph <: AbstractUndirectedStream
+    name::AbstractString
+    T::Intervals
+    V::Set{AbstractString}
+    W::Dict{AbstractString,Node}
+    E::Dict{AbstractString,Dict{AbstractString,Link}}
+end
+
+struct DirectedStreamGraph <: AbstractDirectedStream
+    name::AbstractString
+    T::Intervals
+    V::Set{AbstractString}
+    W::Dict{AbstractString,Node}
+    E::Dict{AbstractString,Dict{AbstractString,Link}}
+end
+
+LinkStream(name::AbstractString) = LinkStream(name, Intervals([]), Set(), Dict())
+LinkStream(name::AbstractString,T::Intervals) = LinkStream(name, T, Set(), Dict())
+
+DirectedLinkStream(name::AbstractString) = DirectedLinkStream(name, Intervals([]), Set(), Dict())
+DirectedLinkStream(name::AbstractString,T::Intervals) = DirectedLinkStream(name, T, Set(), Dict())
+
+StreamGraph(name::AbstractString) = StreamGraph(name, Intervals([]), Set(), Dict(), Dict())
+StreamGraph(name::AbstractString,T::Intervals) = StreamGraph(name, T, Set(), Dict(), Dict())
+
+nodes(ls::Union{LinkStream,DirectedLinkStream},t::Float64)=ls.V
+nodes(s::Union{StreamGraph,DirectedStreamGraph}, t::Float64)=[n for (n,interv) in s.W if t ∈ interv]
+
+links(s::AbstractStream,t::Float64)=[l for (k,v) in s.E for (kk,l) in v if t ∈ l]
+links(s::AbstractDirectedStream,from::AbstractString,to::AbstractString)=s.E[from][to]
+links(s::AbstractUndirectedStream,from::AbstractString,to::AbstractString)=from<to ? s.E[from][to] : s.E[to][from]
+links_from(s::AbstractDirectedStream,node::AbstractString)=haskey(s.E,node) ? s.E[node] : []
+links_to(s::AbstractDirectedStream,node::AbstractString)=[l for l in to[node] for (from,to) in s.E if haskey(to,node)]
+function links(s::AbstractUndirectedStream,node::AbstractString)
+    result = Link[]
+    for (from,access) in s.E
+        if from==node
+            for (to,l) in access
+                push!(result,l)
+            end
+        else
+            for (to,l) in access
+                if to==node
+                    push!(result,l)
+                end
+            end
+        end
+    end
+    result
+end
+
+times(ls::Union{LinkStream,DirectedLinkStream}, name::AbstractString)=name ∈ ls ? ls.T : []
+times(s::Union{StreamGraph,DirectedStreamGraph}, name::AbstractString)=name ∈ s ? ls.W[name].presence : Intervals()
+times(ls::AbstractDirectedStream, from::AbstractString, to::AbstractString)=haskey(ls.E,from)&haskey(ls.E[from],to) ? ls.E[from][to].presence : Intervals()
+function times(ls::AbstractUndirectedStream, from::AbstractString, to::AbstractString)
+    if from==to
+        return Intervals()
+    elseif from>to
+        from,to=to,from
+    end
+    if haskey(ls.E,from) & haskey(ls.E[from],to)
+        return ls.E[from][to].presence
+    else
+        return Intervals()
+    end
+end
+
+function neighbors(s::AbstractStream, node::AbstractString, t::Float64)
+    return
+end
+
+#Base.getindex(s::StreamGraph, name::AbstractString)=ls.W[name]
+#Base.getindex(s::AbstractDirectedStream, from::AbstractString, to::AbstractString)=s.E[from][to]
+#Base.getindex(s::AbstractUndirectedStream, from::AbstractString, to::AbstractString)=(haskey(s.E,from)&haskey(s.E[from],to)) ? s.E[from][to] : s.E[to][from]
 
 # ----------- OPERATIONS ON STREAMS -------------
 #
 ∈(t::Float64,s::AbstractStream)=t ∈ s.T
-∈(n::Node,s::StreamGraph)=n ∈ s.W
-∈(l::Link,s::AbstractStream)=l ∈ s.E
-∈(n::AbstractString,s::AbstractStream)=n ∈ s.V
+∈(n::Node,s::StreamGraph)=haskey(s.W,n.name) & s.W[n.name] == n
+∈(n::Node,s::DirectedStreamGraph)=haskey(s.W,n.name) & s.W[n.name] == n
+∈(l::Link,s::AbstractStream)=haskey(s.E,l.from) & haskey(s.E[l.from],l.to) & s.E[l.from][l.to] == l
+∈(n::AbstractString,ls::Union{LinkStream,DirectedLinkStream})=n ∈ ls.V
+∈(n::AbstractString,s::Union{StreamGraph,DirectedStreamGraph})=n ∈ s.V & haskey(s.W,n)
+
 ⊆(t::Tuple{Float64,Float64},s::AbstractStream)=t ⊆ s.T
+# TO UPDATE -----
 ⊆(ls1::LinkStream,ls2::LinkStream)=(ls1.T ⊆ ls2.T)&(ls1.V ⊆ ls2.V)&(ls1.E ⊆ ls2.E)
 ⊆(s1::StreamGraph,s2::StreamGraph)=(s1.T ⊆ s2.T)&(s1.V ⊆ s2.V)&(s1.W ⊆ s2.W)&(s1.E ⊆ s2.E)
+
 ∩(ls1::LinkStream,ls2::LinkStream)=LinkStream("$ls1.name n $ls2.name", ls1.T ∩ ls2.T, ls1.V ∩ ls2.V, ls1.E ∩ ls2.E)
 ∩(s1::StreamGraph,s2::StreamGraph)=StreamGraph("$s1.name n $s2.name", s1.T ∩ s2.T, s1.V ∩ s2.V, s1.W ∩ s2.W, s1.E ∩ s2.E)
+
 ∪(ls1::LinkStream,ls2::LinkStream)=LinkStream("$ls1.name u $ls2.name", ls1.T ∪ ls2.T, ls1.V ∪ ls2.V, ls1.E ∪ ls2.E)
 ∪(s1::StreamGraph,s2::StreamGraph)=StreamGraph("$s1.name u $s2.name", s1.T ∪ s2.T, s1.V ∪ s2.V, s1.W ∪ s2.W, s1.E ∪ s2.E)
-
-function is_connected(s::AbstractStream, a::AbstractString, b::AbstractString, t::Float64)
-    idx = match(a,b,s.E)
-    append!(idx,match(b,a,s.E))
-    if length(idx)==0
-        return false
-    elseif length(idx)==1
-        return t ∈ s.E[idx][1]
-    else
-        throw("More than one link with end points $a and $b...")
-    end
-end
+# -----
 
 # ----------- ADDING THINGS TO STREAMS -------------
 #
-function add_node!(ls::LinkStream, n::AbstractString)
+function add_node!(ls::Union{LinkStream,DirectedLinkStream}, n::AbstractString)
     push!(ls.V,n)
 end
 
-function add_node!(s::StreamGraph, n::Node)
-    idx=get_idx(n.name,s.W)
-    if length(idx)==0
+function add_node!(s::Union{StreamGraph,DirectedStreamGraph}, n::Node)
+    if n.name ∉ s
         push!(s.V,n.name)
-        push!(s.W,n)
-    elseif length(idx)==1
-        merge!(s.W[idx][1],n)
+        s.W[n.name] = n
     else
-        throw("More than one node named $n.name in stream $s.name...")
+        merge!(s.W[n.name],n)
     end
 end
 
-function add_link!(s::AbstractStream, l::Link)
-    idx=match(l,s.E)
-    if length(idx)==0
-        push!(s.E,l)
-    elseif length(idx)==1
-        merge!(s.E[idx][1],l)
+function add_link!(ls::DirectedLinkStream, l::Link)
+    if l.from ∉ ls
+        add_node!(ls,l.from)
+    end
+    if l.to ∉ ls
+        add_node!(ls,l.to)
+    end
+    if !haskey(ls.E,l.from)
+        ls.E[l.from] = Dict()
+    end
+    if !haskey(ls.E[l.from],l.to)
+        ls.E[l.from][l.to] = l
     else
-        throw("More than one link with end points ($l.from,$l.to)...")
+        merge!(ls.E[l.from][l.to],l)
     end
 end
 
-function record!(ls::LinkStream, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
-    if (t0,t1) ⊈ ls
-        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
+function add_link!(ls::LinkStream, l::Link)
+    if l.from ∉ ls
+        add_node!(ls,l.from)
     end
-    if from ∉ ls
-        add_node!(ls,from)
+    if l.to ∉ ls
+        add_node!(ls,l.to)
     end
-    if to ∉ ls
-        add_node!(ls,to)
+    if l.to < l.from
+        l.from,l.to=l.to,l.from
+    end
+    if !haskey(ls.E,l.from)
+        ls.E[l.from] = Dict()
+    end
+    if !haskey(ls.E[l.from],l.to)
+        ls.E[l.from][l.to] = l
+    else
+        merge!(ls.E[l.from][l.to],l)
+    end
+end
+
+function add_link!(s::DirectedStreamGraph, l::Link)
+    if l.from ∉ s
+        new_from = Node(l.from, l.presence)
+        add_node!(s,new_from)
+    elseif l.presence ⊈ s.W[l.from].presence
+        new_from = Node(l.from, l.presence)
+        merge!(s.W[l.from],new_from)
+    end
+    if l.to ∉ s
+        new_to = Node(l.to, l.presence)
+        add_node!(s,new_to)
+    elseif l.presence ⊈ s.W[l.to].presence
+        new_to = Node(l.to, l.presence)
+        merge!(s.W[l.to],new_to)
+    end
+    if !haskey(s.E,l.from)
+        s.E[l.from] = Dict()
+    end
+    if !haskey(s.E[l.from],l.to)
+        s.E[l.from][l.to] = l
+    else
+        merge!(s.E[l.from][l.to],l)
+    end
+end
+
+function add_link!(s::StreamGraph, l::Link)
+    if l.from ∉ s
+        new_from = Node(l.from, l.presence)
+        add_node!(s,new_from)
+    elseif l.presence ⊈ s.W[l.from].presence
+        new_from = Node(l.from, l.presence)
+        merge!(s.W[l.from],new_from)
+    end
+    if l.to ∉ s
+        new_to = Node(l.to, l.presence)
+        add_node!(s,new_to)
+    elseif l.presence ⊈ s.W[l.to].presence
+        new_to = Node(l.to, l.presence)
+        merge!(s.W[l.to],new_to)
+    end
+    if l.to < l.from
+        l.from,l.to=l.to,l.from
+    end
+    if !haskey(s.E,l.from)
+        s.E[l.from] = Dict()
+    end
+    if !haskey(s.E[l.from],l.to)
+        s.E[l.from][l.to] = l
+    else
+        merge!(s.E[l.from][l.to],l)
+    end
+end
+
+function record!(s::AbstractStream, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
+    if (t0,t1) ⊈ s
+        throw("Stream $s.name is defined over $s.T. Invalid link between t0=$t0 and t1=$t1.")
     end
     new = Link("$from to $to", Intervals([(t0,t1)]), from, to, 1)
-    add_link!(ls,new)
+    add_link!(s,new)
 end
 
-function record!(s::StreamGraph, t0::Float64, t1::Float64, n::AbstractString)
+function record!(s::Union{StreamGraph,DirectedStreamGraph}, t0::Float64, t1::Float64, n::AbstractString)
     if (t0,t1) ⊈ s
-        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
+        throw("Stream $s.name is defined over $s.T. Invalid link between t0=$t0 and t1=$t1.")
     end
     new = Node(n,Intervals([(t0,t1)]))
-    if n ∉ s
-        add_node!(s,new)
-    else
-        idx=get_idx(n,s.W)
-        if length(idx)==1
-            merge!(s.W[idx][1],new)
-        else
-            throw("Problem adding node $n in stream $s.name.")
-        end
-    end
-end
-
-function record!(s::StreamGraph, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
-    if (t0,t1) ⊈ s
-        throw("Stream $ls.name is defined over $ls.T. Invalid link between t0=$t0 and t1=$t1.")
-    end
-    if from ∉ s
-        add_node!(s,from)
-    end
-    if to ∉ s
-        add_node!(s,to)
-    end
-    new = Link("$from to $to", Intervals([(t0,t1)]), from, to, 1)
-    add_link!(ls,new)
+    add_node!(s,new)
 end
 
 # ----------- READ FROM FILES -------------
@@ -452,72 +591,35 @@ end
 # ----------- METRICS OF STREAMS -------------
 #
 duration(s::AbstractStream)=length(s.T)
-node_duration(ls::LinkStream)=duration(ls)
 
-function node_duration(s::StreamGraph)
-    if length(s.W)!=0
-        return sum([duration(n) for n in s.W]) / length(s.V)
-    else
-        throw("There is 0 node in stream $s.name...")
-    end
-end
+node_duration(ls::Union{LinkStream,DirectedLinkStream})=duration(ls)
+node_duration(s::Union{StreamGraph,DirectedStreamGraph})=length(s.V)>0 ? sum([duration(n) for (k,n) in s.W])/length(s.V) : 0
 
-function link_duration(s::AbstractStream)
-    if length(s.E)!=0
-        return 2 * sum([duration(l) for l in s.E]) / (length(s.V)*(length(s.V)-1))
-    else
-        throw("There is 0 link in stream $s.name...")
-    end
-end
+link_duration(s::AbstractStream)=length(s.V)>1 ? 2*sum([duration(l) for (k,v) in s.E for (kk,l) in v])/(length(s.V)*(length(s.V)-1)) : 0
 
-function contribution(s::AbstractStream, o::StreamObject)
-    if duration(s)!=0
-        return duration(o) / duration(s)
-    else
-        throw("Stream $s.name has no duration...")
-    end
-end
+contribution(s::AbstractStream, o::StreamObject)=duration(s)!=0 ? duration(o) / duration(s) : 0
+contribution(ls::Union{LinkStream,DirectedLinkStream}, node_name::AbstractString)=1
+contribution(s::Union{StreamGraph,DirectedStreamGraph}, node_name::AbstractString)=contribution(s,s.W[node_name])
+contribution(s::AbstractDirectedStream, from::AbstractString, to::AbstractString)=haskey(s.E,from)&haskey(s.E[from],to) ? contribution(s,s.E[from][to]) : 0
+contribution(s::AbstractUndirectedStream, from::AbstractString, to::AbstractString)=from<=to ? contribution(s,s.E[from][to]) : contribution(s,s.E[to][from])
 
-contribution(ls::LinkStream, node_name::AbstractString)=1
+number_of_nodes(s::Union{StreamGraph,DirectedStreamGraph})=sum([contribution(s,n) for (k,n) in s.W])
+number_of_nodes(ls::Union{LinkStream,DirectedLinkStream})=length(ls.V)
 
-function contribution(s::StreamGraph, node_name::AbstractString)
-    idx=get_idx(node_name,s.W)
-    if length(idx)==1
-        return contribution(s,s.W[idx][1])
-    else
-        throw("Cannot compute contribution of node $node_name.")
-    end
-end
+number_of_links(s::AbstractStream)=sum([contribution(s,l) for (k,v) in s.E for (kk,l) in v])
 
-function contribution(s::AbstractStream, from::AbstractString, to::AbstractString)
-    idx=match(from,to,s.E)
-    if length(idx)==1
-        return contribution(s,s.E[idx][1])
-    else
-        throw("Cannot compute contribution of link ($from,$to).")
-    end
-end
+density(ls::Union{LinkStream,DirectedLinkStream})=2 * sum([duration(l) for (k,v) in ls.E for (kk,l) in v]) / (length(ls.V)*(length(ls.V)-1)*duration(ls)) 
+density(ls::Union{LinkStream,DirectedLinkStream}, t::Float64)=length(ls.V)>1 ? 2 * sum([duration(l) for l in links(ls,t)])/(length(ls.V)*(length(ls.V)-1)) : 0
+density(ls::Union{LinkStream,DirectedLinkStream},n1::AbstractString,n2::AbstractString)=duration(ls)!=0 ? duration(links(ls,n1,n2))/duration(ls) : 0
 
-number_of_nodes(s::StreamGraph)=sum([contribution(s,n) for n in s.W])
-number_of_nodes(ls::LinkStream)=length(ls.V)
-number_of_links(s::AbstractStream)=sum([contribution(s,l) for l in s.E])
+coverage(ls::Union{LinkStream,DirectedLinkStream})=1
 
-density(ls::LinkStream)=2 * sum([duration(l) for l in ls.E]) / (length(ls.V)*(length(ls.V)-1)*duration(ls)) 
+compactness(ls::Union{LinkStream,DirectedLinkStream})=1
 
-function density(ls::LinkStream, n1::AbstractString, n2::AbstractString)
-    idx_link = match(n1,n2,ls.E)
-    if length(idx_link) == 1
-        return duration(ls.E[idx_link][1]) / duration(ls)
-    elseif length(idx_link) == 0
-        return 0
-    else
-        throw("More than one link in stream $ls.name with from name $n1 and to name $n2.")
-    end
-end
+uniformity(ls::Union{LinkStream,DirectedLinkStream})=1
 
-function coverage(ls::LinkStream)
-    return 1
-end
+clustering(s::AbstractUndirectedStream, v::AbstractString)=sum([length((times(s,v,u) ∩ times(s,v,w)) ∩ times(s,u,w)) for (u,w) in s.V ⊗ s.V])/sum([length(times(s,v,u) ∩ times(s,v,w)) for (u,w) in s.V ⊗ s.V])
+clustering(s::AbstractUndirectedStream)=length(s.V)>0 ? 1.0/length(s.V)*sum([contribution(s,v)*clustering(s,v) for v in s.V]) : 0.0
 
 # ----------- JUMPS -------------
 #

@@ -15,7 +15,7 @@ import Base.∪
 import Base.∩
 import Base.⊆
 import Base.+
-import Base: length, match, merge, merge!
+import Base: length, count, match, merge, merge!
 
 ########################################
 # Exports
@@ -23,11 +23,12 @@ import Base: length, match, merge, merge!
 export 
 
 		# Stream components
-		Intervals, Node, Link, StreamObject, AbstractStream, 
-		LinkStream, StreamGraph,
+		Intervals, Node, Link, LinkStream, StreamGraph,
+		DirectedLinkStream, DirectedStreamGraph,
+		times, nodes, links, links_from, links_to,
 
 		# Paths
-		Jump, DurationJump, AbstractPath, Path, DurationPath,
+		Jump, DurationJump, Path, DurationPath,
 
 		# Adding to streams
 		add_node!, add_link!, record!, load!, parse_line,
@@ -36,12 +37,14 @@ export
 		duration, node_duration, link_duration, contribution,
 		number_of_nodes, number_of_links, density,
 
+		clustering,
+
 		# functions
 		count, length, merge, merge!, push, clean, from_match, to_match, 
 		match, get_idx, is_connected, is_valid, start, finish,
 
 		# Operators
-		==, ≈, ∈, ∪, ∩, ⊆, +
+		==, ≈, ∈, ∪, ∩, ⊆, +, ×, ⊗
 
 #######################################
 # Includes
