@@ -36,7 +36,8 @@ export
 
 		# Durations
 		duration, node_duration, link_duration, contribution,
-		number_of_nodes, number_of_links, density,
+		number_of_nodes, number_of_links, density, node_contribution,
+		link_contribution,
 
 		node_clustering, coverage, uniformity,
 
