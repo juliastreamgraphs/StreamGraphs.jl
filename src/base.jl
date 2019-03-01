@@ -393,7 +393,7 @@ function links(s::AbstractUndirectedStream,node::AbstractString)
 end
 
 times(ls::Union{LinkStream,DirectedLinkStream}, name::AbstractString)=name ∈ ls ? ls.T : []
-times(s::Union{StreamGraph,DirectedStreamGraph}, name::AbstractString)=name ∈ s ? ls.W[name].presence : Intervals()
+times(s::Union{StreamGraph,DirectedStreamGraph}, name::AbstractString)=name ∈ s ? s.W[name].presence : Intervals()
 times(ls::AbstractDirectedStream, from::AbstractString, to::AbstractString)=haskey(ls.E,from)&haskey(ls.E[from],to) ? ls.E[from][to].presence : Intervals()
 function times(ls::AbstractUndirectedStream, from::AbstractString, to::AbstractString)
     if from==to
@@ -401,8 +401,12 @@ function times(ls::AbstractUndirectedStream, from::AbstractString, to::AbstractS
     elseif from>to
         from,to=to,from
     end
-    if haskey(ls.E,from) & haskey(ls.E[from],to)
-        return ls.E[from][to].presence
+    if haskey(ls.E,from)
+        if haskey(ls.E[from],to)
+            return ls.E[from][to].presence
+        else
+            return Intervals()
+        end
     else
         return Intervals()
     end
@@ -423,7 +427,7 @@ end
 ∈(n::Node,s::DirectedStreamGraph)=haskey(s.W,n.name) & s.W[n.name] == n
 ∈(l::Link,s::AbstractStream)=haskey(s.E,l.from) & haskey(s.E[l.from],l.to) & s.E[l.from][l.to] == l
 ∈(n::AbstractString,ls::Union{LinkStream,DirectedLinkStream})=n ∈ ls.V
-∈(n::AbstractString,s::Union{StreamGraph,DirectedStreamGraph})=n ∈ s.V & haskey(s.W,n)
+∈(n::AbstractString,s::Union{StreamGraph,DirectedStreamGraph})=(n ∈ s.V) & haskey(s.W,n)
 
 ⊆(t::Tuple{Float64,Float64},s::AbstractStream)=t ⊆ s.T
 # TO UPDATE -----
