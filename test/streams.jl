@@ -69,13 +69,59 @@ load!(ls,"./test_data/link_stream_1.txt")
 @test length(times(ls,"d","b"))==3.0
 @test length(times(ls,"b","c"))==7.0
 @test length(times(ls,"c","b"))==7.0
+@test coverage(ls)==1.0
+@test uniformity(ls)==1.0
 @test clustering(ls,"a")==1.0
 @test clustering(ls,"b")==0.375
 @test clustering(ls,"c")==0.6
 @test clustering(ls,"d")==0.5
 @test clustering(ls)==0.61875
+N_c=neighborhood(ls,"c")
+@test keys(N_c)==Set(["a","b","d"])
+@test N_c["a"].presence==Intervals([(2.0,5.0)])
+@test N_c["b"].presence==Intervals([(1.0,8.0)])
+@test N_c["d"].presence==Intervals([(6.0,9.0)])
+@test degree(ls,"c")==1.3
 
 # StreamGraph tests
+function load_stream_graph_1()
+	s=StreamGraph("stream-graph 1", Intervals([(0.0,10.0)]))
+	record!(s,0.0,10.0,"a")
+	record!(s,0.0,4.0,"b")
+	record!(s,5.0,10.0,"b")
+	record!(s,4.0,9.0,"c")
+	record!(s,1.0,3.0,"d")
+	record!(s,1.0,3.0,"a","b")
+	record!(s,7.0,8.0,"a","b")
+	record!(s,4.5,7.5,"a","c")
+	record!(s,6.0,9.0,"b","c")
+	record!(s,2.0,3.0,"b","d")
+	s
+end
+s=load_stream_graph_1()
+@test length(s.V)==4
+@test duration(s)==10.0
+@test times(s,"a")==Intervals([(0.0,10.0)])
+@test times(s,"b")==Intervals([(0.0,4.0),(5.0,10.0)])
+@test times(s,"c")==Intervals([(4.0,9.0)])
+@test times(s,"d")==Intervals([(1.0,3.0)])
+@test times(s,"a","b")==Intervals([(1.0,3.0),(7.0,8.0)])
+@test times(s,"b","a")==Intervals([(1.0,3.0),(7.0,8.0)])
+@test times(s,"a","c")==Intervals([(4.5,7.5)])
+@test times(s,"c","a")==Intervals([(4.5,7.5)])
+@test times(s,"b","c")==Intervals([(6.0,9.0)])
+@test times(s,"c","b")==Intervals([(6.0,9.0)])
+@test times(s,"b","d")==Intervals([(2.0,3.0)])
+@test times(s,"d","b")==Intervals([(2.0,3.0)])
+@test times(s,"a","d")==Intervals([])
+@test coverage(s)==0.65
+@test number_of_nodes(s)==2.6
+@test number_of_links(s)==1.0
+@test node_duration(s)==6.5
+@test isapprox(link_duration(s),1.6666666;atol=0.00001)
+@test uniformity(s)==0.39285714285714285
+@test density(s)==0.45454545454545453
+
 """s1 = StreamGraph("s1", Intervals([(0.0, 10.0)]), Set(["a","c"]), [a,c], [l2])
 s2 = StreamGraph("s1", Intervals([(0.0, 10.0)]), Set(["a","c"]), [a,c], [l2])
 @test s1==s2
