@@ -768,6 +768,21 @@ function time_clustering(s::AbstractUndirectedStream)
     dW != 0 ? 1.0/dW*sum([time_clustering(s,0.5*(t[2]+t[1])) * length(nodes(s,0.5*(t[2]+t[1]))) for t in zip(τ[1:end-1],τ[2:end])]) : 0.0
 end
 
+function clustering(s::AbstractUndirectedStream)
+    card_TV = duration(s)*length(s.V)
+    if card_TV==0
+        return 0.0
+    end
+    τ = times(s)
+    acc::Float64 = 0.0
+    for v in s.V
+        for t in zip(τ[1:end-1],τ[2:end])
+            acc+=node_clustering(s,v,0.5*(t[1]+t[2]))*(t[2]-t[1])
+        end
+    end
+    1.0/card_TV*acc
+end
+
 ### DEGREE ###
 degree(s::AbstractUndirectedStream,node::AbstractString)=duration(s)!=0 ? duration(neighborhood(s,node))/duration(s) : 0.0
 degree(s::AbstractUndirectedStream,node::AbstractString,t::Float64)=length(neighborhood(s,node,t))

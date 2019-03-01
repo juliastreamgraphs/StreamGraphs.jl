@@ -40,7 +40,8 @@ export
 		number_of_nodes, number_of_links, density, node_contribution,
 		link_contribution,
 
-		node_clustering, time_clustering, coverage, uniformity,
+		node_clustering, time_clustering, clustering, coverage, 
+		uniformity,
 
 		# functions
 		count, length, merge, merge!, push, clean, from_match, to_match, 

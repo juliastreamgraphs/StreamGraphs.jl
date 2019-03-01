@@ -123,6 +123,7 @@ Na=neighborhood(s,"a")
 @test degree(s)==0.5
 @test times(s)==[0.0,1.0,2.0,3.0,4.0,4.5,5.0,6.0,7.0,7.5,8.0,9.0,10.0]
 @test time_clustering(s)==0.11538461538461539
+@test clustering(s)==0.037500000000000006
 
 s2a=load_stream_graph_2a()
 s2b=load_stream_graph_2b()
@@ -160,3 +161,4 @@ s7=load_stream_graph_7()
 @test time_clustering(s7,2.5)==0.0
 @test time_clustering(s7,5.0)==0.0
 @test time_clustering(s7)==0.0
+@test clustering(s7)==0.0
