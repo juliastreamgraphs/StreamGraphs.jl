@@ -733,16 +733,40 @@ function node_clustering(s::AbstractUndirectedStream, v::AbstractString)
     end
     denom != 0 ? nomin/denom : 0.0
 end
+
 function node_clustering(s::AbstractUndirectedStream,v::AbstractString,t::Float64)
     Nt=Set(AbstractString[])
-    for n in keys(neighborhood(s,v,t))
+    for n in neighborhood(s,v,t)
         push!(Nt,n)
     end
     nom=sum([1.0 for (u,w) in Nt ⊗ Nt if ((t ∈ times(s,v,u)) & (t ∈ times(s,v,w)) & (t ∈ times(s,u,w)))])
     denom=sum([1.0 for (u,w) in Nt ⊗ Nt if ((t ∈ times(s,v,u)) & (t ∈ times(s,v,w)))])
-    denom != 0 ? nomin/denom : 0.0
+    denom != 0 ? nom/denom : 0.0
 end
+
 node_clustering(s::AbstractUndirectedStream)=length(s.V)>0 ? 1.0/length(s.V)*sum([contribution(s,v)*node_clustering(s,v) for v in s.V]) : 0.0
+
+function time_clustering(s::AbstractUndirectedStream,t::Float64)
+    nom::Float64=0.0
+    denom::Float64=0.0
+    for v in s.V
+        acc::Float64=0.0
+        for (u,w) in s.V ⊗ s.V
+            if ((t ∈ times(s,v,u)) & (t ∈ times(s,v,w)))
+                acc+=1.0
+            end
+        end
+        nom+=node_clustering(s,v,t) * acc
+        denom+=acc
+    end
+    denom != 0 ? nom/denom : 0.0
+end
+
+function time_clustering(s::AbstractUndirectedStream)
+    τ = times(s)
+    dW = duration(s.W)
+    dW != 0 ? 1.0/dW*sum([time_clustering(s,0.5*(t[2]+t[1])) * length(nodes(s,0.5*(t[2]+t[1]))) for t in zip(τ[1:end-1],τ[2:end])]) : 0.0
+end
 
 ### DEGREE ###
 degree(s::AbstractUndirectedStream,node::AbstractString)=duration(s)!=0 ? duration(neighborhood(s,node))/duration(s) : 0.0
