@@ -38,6 +38,27 @@ function load_stream_graph_2b()
 	s
 end
 
+"""Load the stream graph from figure 6a."""
+function load_stream_graph_6a()
+	s=StreamGraph("stream-graph 6a", Intervals([(0.0,4.0)]))
+	record!(s,0.0,2.0,"a")
+	record!(s,0.0,4.0,"b")
+	record!(s,2.0,4.0,"c")
+	record!(s,0.0,2.0,"a","b")
+	record!(s,2.0,4.0,"b","c")
+	s
+end
+
+"""Load the stream graph from figure 6b."""
+function load_stream_graph_6b()
+	s=StreamGraph("stream-graph 6b", Intervals([(0.0,4.0)]))
+	record!(s,0.0,0.0,"a")
+	record!(s,0.0,4.0,"b")
+	record!(s,0.0,4.0,"c")
+	record!(s,0.0,4.0,"b","c")
+	s
+end
+
 # StreamGraph tests
 s=load_stream_graph_1()
 @test length(s.V)==4
@@ -77,3 +98,8 @@ s2b=load_stream_graph_2b()
 @test number_of_links(s2b)==1
 @test density(s2a)==0.75
 @test density(s2b)==1.0
+
+s6a=load_stream_graph_6a()
+s6b=load_stream_graph_6b()
+@test density(s6a)==1.0
+@test density(s6b)==1.0
