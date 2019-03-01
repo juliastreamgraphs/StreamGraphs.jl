@@ -71,14 +71,15 @@ load!(ls,"./test_data/link_stream_1.txt")
 @test length(times(ls,"c","b"))==7.0
 @test coverage(ls)==1.0
 @test uniformity(ls)==1.0
-@test clustering(ls,"a")==1.0
-@test clustering(ls,"b")==0.375
-@test clustering(ls,"c")==0.6
-@test clustering(ls,"d")==0.5
-@test clustering(ls)==0.61875
+@test node_clustering(ls,"a")==1.0
+@test node_clustering(ls,"b")==0.375
+@test node_clustering(ls,"c")==0.6
+@test node_clustering(ls,"d")==0.5
+@test node_clustering(ls)==0.61875
 N_c=neighborhood(ls,"c")
 @test keys(N_c)==Set(["a","b","d"])
 @test N_c["a"].presence==Intervals([(2.0,5.0)])
 @test N_c["b"].presence==Intervals([(1.0,8.0)])
 @test N_c["d"].presence==Intervals([(6.0,9.0)])
 @test degree(ls,"c")==1.3
+@test times(ls)==[0.0,1.0,2.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0]

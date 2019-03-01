@@ -366,9 +366,12 @@ DirectedLinkStream(name::AbstractString,T::Intervals) = DirectedLinkStream(name,
 StreamGraph(name::AbstractString) = StreamGraph(name, Intervals([]), Set(), Dict(), Dict())
 StreamGraph(name::AbstractString,T::Intervals) = StreamGraph(name, T, Set(), Dict(), Dict())
 
+nodes(ls::Union{LinkStream,DirectedLinkStream})=ls.V
 nodes(ls::Union{LinkStream,DirectedLinkStream},t::Float64)=ls.V
 nodes(s::Union{StreamGraph,DirectedStreamGraph}, t::Float64)=[n for (n,interv) in s.W if t ∈ interv]
+nodes(s::Union{StreamGraph,DirectedStreamGraph})=[b for (a,b) in s.W]
 
+links(s::AbstractStream)=[l for (k,v) in s.E for (kk,l) in v]
 links(s::AbstractStream,t::Float64)=[l for (k,v) in s.E for (kk,l) in v if t ∈ l]
 links(s::AbstractDirectedStream,from::AbstractString,to::AbstractString)=s.E[from][to]
 links(s::AbstractUndirectedStream,from::AbstractString,to::AbstractString)=from<to ? s.E[from][to] : s.E[to][from]
@@ -410,6 +413,32 @@ function times(ls::AbstractUndirectedStream, from::AbstractString, to::AbstractS
     else
         return Intervals()
     end
+end
+function times(ls::Union{LinkStream,DirectedLinkStream})
+    evt = Set{Float64}([ls.T.list[1][1],ls.T.list[1][2]])
+    for l in links(ls)
+        for interv in l.presence.list
+            push!(evt,interv[1])
+            push!(evt,interv[2])
+        end
+    end
+    sort(collect(evt))
+end
+function times(s::Union{StreamGraph,DirectedStreamGraph})
+    evt = Set{Float64}([s.T.list[1][1],s.T.list[1][2]])
+    for n in nodes(s)
+        for interv in n.presence.list
+            push!(evt,interv[1])
+            push!(evt,interv[2])
+        end
+    end
+    for l in links(s)
+        for interv in l.presence.list
+            push!(evt,interv[1])
+            push!(evt,interv[2])
+        end
+    end
+    sort(collect(evt))
 end
 
 function neighborhood(s::AbstractUndirectedStream, node::AbstractString)
@@ -687,7 +716,7 @@ uniformity(ls::Union{LinkStream,DirectedLinkStream})=1.0
 uniformity(s::Union{StreamGraph,DirectedStreamGraph})=sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])/sum([length(times(s,u) ∪ times(s,v)) for (u,v) in s.V ⊗ s.V])
 
 ### CLUSTERING ###
-function clustering(s::AbstractUndirectedStream, v::AbstractString)
+function node_clustering(s::AbstractUndirectedStream, v::AbstractString)
     nomin=0
     denom=0
     N=Set(AbstractString[])
@@ -698,14 +727,18 @@ function clustering(s::AbstractUndirectedStream, v::AbstractString)
         nomin+=length((times(s,v,u) ∩ times(s,v,w)) ∩ times(s,u,w))
         denom+=length(times(s,v,u) ∩ times(s,v,w))
     end
-    if denom != 0
-        return nomin/denom
-    else
-        return 0
-    end
+    denom != 0 ? nomin/denom : 0.0
 end
-
-clustering(s::AbstractUndirectedStream)=length(s.V)>0 ? 1.0/length(s.V)*sum([contribution(s,v)*clustering(s,v) for v in s.V]) : 0.0
+function node_clustering(s::AbstractUndirectedStream,v::AbstractString,t::Float64)
+    Nt=Set(AbstractString[])
+    for n in keys(neighborhood(s,v,t))
+        push!(Nt,n)
+    end
+    nom=sum([1.0 for (u,w) in Nt ⊗ Nt if ((t ∈ times(s,v,u)) & (t ∈ times(s,v,w)) & (t ∈ times(s,u,w)))])
+    denom=sum([1.0 for (u,w) in Nt ⊗ Nt if ((t ∈ times(s,v,u)) & (t ∈ times(s,v,w)))])
+    denom != 0 ? nomin/denom : 0.0
+end
+node_clustering(s::AbstractUndirectedStream)=length(s.V)>0 ? 1.0/length(s.V)*sum([contribution(s,v)*node_clustering(s,v) for v in s.V]) : 0.0
 
 ### DEGREE ###
 degree(s::AbstractUndirectedStream,node::AbstractString)=duration(s)!=0 ? duration(neighborhood(s,node))/duration(s) : 0.0

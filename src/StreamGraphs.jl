@@ -38,7 +38,7 @@ export
 		duration, node_duration, link_duration, contribution,
 		number_of_nodes, number_of_links, density,
 
-		clustering, coverage, uniformity,
+		node_clustering, coverage, uniformity,
 
 		# functions
 		count, length, merge, merge!, push, clean, from_match, to_match, 
