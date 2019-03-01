@@ -26,6 +26,7 @@ export
 		Intervals, Node, Link, LinkStream, StreamGraph,
 		DirectedLinkStream, DirectedStreamGraph,
 		times, nodes, links, links_from, links_to,
+		neighborhood, degree, average_node_degree,
 
 		# Paths
 		Jump, DurationJump, Path, DurationPath,

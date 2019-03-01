@@ -412,9 +412,35 @@ function times(ls::AbstractUndirectedStream, from::AbstractString, to::AbstractS
     end
 end
 
-function neighbors(s::AbstractStream, node::AbstractString, t::Float64)
+function neighborhood(s::AbstractUndirectedStream, node::AbstractString)
+    N=Dict{AbstractString,Intervals}()
+    for l in links(s,node)
+        if l.from==node
+            if haskey(N,l.to)
+                N[l.to]=N[l.to] ∪ (times(s,l.to) ∩ l.presence)
+            else
+                N[l.to]=times(s,l.to) ∩ l.presence
+            end
+        elseif l.to==node
+            if haskey(N,l.from)
+                N[l.from]=N[l.from] ∪ (times(s,l.from) ∩ l.presence)
+            else
+                N[l.from]=times(s,l.from) ∩ l.presence
+            end
+        end
+    end
+    Dict{AbstractString,Node}([k=>Node(k,v) for (k,v) in N])
+end
+function neighborhood(s::AbstractUndirectedStream, node::AbstractString, t::Float64)
     return
 end
+
+degree(s::AbstractUndirectedStream,node::AbstractString)=duration(s)!=0 ? duration(neighborhood(s,node))/duration(s) : 0.0
+degree(s::AbstractUndirectedStream,node::AbstractString,t::Float64)=length(neighborhood(s,node,t))
+
+average_node_degree(ls::LinkStream)=number_of_nodes(ls)!=0 ? 2.0*number_of_links(ls)/number_of_nodes(ls) : 0.0
+average_node_degree(s::StreamGraph)=duration(s.W)!=0 ? 1.0/duration(s.W)*sum([length(times(s,v)) for v in s.V]) : 0.0
+           
 
 #Base.getindex(s::StreamGraph, name::AbstractString)=ls.W[name]
 #Base.getindex(s::AbstractDirectedStream, from::AbstractString, to::AbstractString)=s.E[from][to]
