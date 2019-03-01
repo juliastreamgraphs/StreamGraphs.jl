@@ -59,6 +59,17 @@ function load_stream_graph_6b()
 	s
 end
 
+"""Load the stream graph from figure 7."""
+function load_stream_graph_7()
+	s=StreamGraph("stream-graph 7", Intervals([(0.0,10.0)]))
+	record!(s,0.0,10.0,"a")
+	record!(s,0.0,10.0,"b")
+	record!(s,0.0,5.0,"c")
+	record!(s,0.0,5.0,"b","c")
+	record!(s,5.0,10.0,"a","b")
+	s
+end
+
 # StreamGraph tests
 s=load_stream_graph_1()
 @test length(s.V)==4
@@ -131,3 +142,17 @@ s6b=load_stream_graph_6b()
 @test degree(s6a,"b")==1.0
 @test degree(s6a,"c")==0.5
 @test average_node_degree(s6a)==0.75
+
+s7=load_stream_graph_7()
+@test number_of_nodes(s7)==2.5
+@test degree(s7,"a")==0.5
+@test degree(s7,"b")==1.0
+@test degree(s7,"c")==0.5
+@test isapprox(average_node_degree(s7),0.7;atol=0.000001)
+@test node_duration(s7)==25.0/3.0
+@test times(s7)==[0.0,5.0,10.0]
+@test node_contribution(s7,2.5)==1.0
+@test degree(s7,2.5)==2.0/3.0
+@test node_contribution(s7,7.5)==2.0/3.0
+@test degree(s7,7.5)==2.0/3.0
+@test average_time_degree(s7)==2.0/3.0
