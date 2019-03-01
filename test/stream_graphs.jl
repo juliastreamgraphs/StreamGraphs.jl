@@ -43,3 +43,4 @@ s=load_stream_graph_1()
 @test density(s,"b","a")==1.0/3.0
 @test density(s,"b","d")==1.0/2.0
 @test density(s,"d","b")==1.0/2.0
+@test density(s,"d")==0.25
