@@ -14,6 +14,30 @@ function load_stream_graph_1()
 	s
 end
 
+"""Load the stream graph from figure 2a."""
+function load_stream_graph_2a()
+	s=StreamGraph("stream-graph 2a", Intervals([(0.0,3.0)]))
+	record!(s,0.0,1.0,"a")
+	record!(s,0.0,3.0,"b")
+	record!(s,0.0,1.0,"c")
+	record!(s,2.0,3.0,"c")
+	record!(s,0.0,1.0,"a","b")
+	record!(s,0.0,1.0,"b","c")
+	record!(s,2.0,3.0,"b","c")
+	s
+end
+
+"""Load the stream graph from figure 2b."""
+function load_stream_graph_2b()
+	s=StreamGraph("stream-graph 2b", Intervals([(0.0,3.0)]))
+	record!(s,0.0,1.0,"a")
+	record!(s,0.0,3.0,"b")
+	record!(s,1.0,3.0,"c")
+	record!(s,0.0,1.0,"a","b")
+	record!(s,1.0,3.0,"b","c")
+	s
+end
+
 # StreamGraph tests
 s=load_stream_graph_1()
 @test length(s.V)==4
@@ -44,3 +68,12 @@ s=load_stream_graph_1()
 @test density(s,"b","d")==1.0/2.0
 @test density(s,"d","b")==1.0/2.0
 @test density(s,"d")==0.25
+
+s2a=load_stream_graph_2a()
+s2b=load_stream_graph_2b()
+@test isapprox(number_of_nodes(s2a),2.0;atol=0.00001)
+@test isapprox(number_of_nodes(s2b),2.0;atol=0.00001)
+@test number_of_links(s2a)==1
+@test number_of_links(s2b)==1
+@test density(s2a)==0.75
+@test density(s2b)==1.0

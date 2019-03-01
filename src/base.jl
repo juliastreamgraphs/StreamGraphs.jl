@@ -623,51 +623,67 @@ end
 duration(s::AbstractStream)=length(s.T)
 duration(W::Dict{AbstractString,Node})=sum([duration(v) for (k,v) in W])
 
+### NODE DURATION ###
 node_duration(ls::Union{LinkStream,DirectedLinkStream})=duration(ls)
 node_duration(s::Union{StreamGraph,DirectedStreamGraph})=length(s.V)>0 ? sum([duration(n) for (k,n) in s.W])/length(s.V) : 0
 
+### LINK DURATION ###
 link_duration(s::AbstractStream)=length(s.V)>1 ? 2*sum([duration(l) for (k,v) in s.E for (kk,l) in v])/(length(s.V)*(length(s.V)-1)) : 0
 
+### CONTRIBUTION ###
 contribution(s::AbstractStream, o::StreamObject)=duration(s)!=0 ? duration(o) / duration(s) : 0
 contribution(ls::Union{LinkStream,DirectedLinkStream}, node_name::AbstractString)=1
 contribution(s::Union{StreamGraph,DirectedStreamGraph}, node_name::AbstractString)=contribution(s,s.W[node_name])
 contribution(s::AbstractDirectedStream, from::AbstractString, to::AbstractString)=haskey(s.E,from)&haskey(s.E[from],to) ? contribution(s,s.E[from][to]) : 0
 contribution(s::AbstractUndirectedStream, from::AbstractString, to::AbstractString)=from<=to ? contribution(s,s.E[from][to]) : contribution(s,s.E[to][from])
 
+### NUMBER OF NODES ###
 number_of_nodes(s::Union{StreamGraph,DirectedStreamGraph})=sum([contribution(s,n) for (k,n) in s.W])
 number_of_nodes(ls::Union{LinkStream,DirectedLinkStream})=length(ls.V)
 
+### NUMBER OF LINKS ###
 number_of_links(s::AbstractStream)=sum([contribution(s,l) for (k,v) in s.E for (kk,l) in v])
 
+### DENSITY ###
 density(ls::Union{LinkStream,DirectedLinkStream})=2 * sum([duration(l) for (k,v) in ls.E for (kk,l) in v]) / (length(ls.V)*(length(ls.V)-1)*duration(ls)) 
+
 function density(s::Union{StreamGraph,DirectedStreamGraph})
     denom = sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])
     denom != 0 ? sum([duration(l) for (k,v) in s.E for (kk,l) in v]) / denom : 0
 end
+
 density(ls::Union{LinkStream,DirectedLinkStream}, t::Float64)=length(ls.V)>1 ? 2 * sum([duration(l) for l in links(ls,t)])/(length(ls.V)*(length(ls.V)-1)) : 0
+
 function density(s::Union{StreamGraph,DirectedStreamGraph}, t::Float64)
     Vt=Set{AbstractString}(nodes(s,t))
     length(Vt)!=0 ? length(links(s,t))/length(Vt ⊗ Vt) : 0.0
 end
+
 density(ls::Union{LinkStream,DirectedLinkStream},n1::AbstractString,n2::AbstractString)=duration(ls)!=0 ? duration(links(ls,n1,n2))/duration(ls) : 0
+
 function density(s::Union{StreamGraph,DirectedStreamGraph},n1::AbstractString,n2::AbstractString)
     denom=length(times(s,n1) ∩ times(s,n2))
     denom != 0 ? length(times(s,n1,n2))/denom : 0.0
 end
+
 function density(s::AbstractStream,n::AbstractString)
     nom=sum([length(times(s,u,n)) for u in s.V if u != n])
     denom=sum([length(times(s,u) ∩ times(s,n)) for u in s.V if u != n])
     denom != 0 ? nom/denom : 0.0
 end
 
+### COVERAGE ###
 coverage(ls::Union{LinkStream,DirectedLinkStream})=1.0
 coverage(s::Union{StreamGraph,DirectedStreamGraph})=((length(s.V)!=0) & (duration(s)!=0)) ? sum([duration(n) for (k,n) in s.W])/(duration(s)*length(s.V)) : 0.0
 
+### COMPACTNESS ###
 compactness(ls::Union{LinkStream,DirectedLinkStream})=1.0
 
+### UNIFORMITY ###
 uniformity(ls::Union{LinkStream,DirectedLinkStream})=1.0
 uniformity(s::Union{StreamGraph,DirectedStreamGraph})=sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])/sum([length(times(s,u) ∪ times(s,v)) for (u,v) in s.V ⊗ s.V])
 
+### CLUSTERING ###
 function clustering(s::AbstractUndirectedStream, v::AbstractString)
     nomin=0
     denom=0
