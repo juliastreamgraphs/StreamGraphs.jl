@@ -432,15 +432,18 @@ function neighborhood(s::AbstractUndirectedStream, node::AbstractString)
     Dict{AbstractString,Node}([k=>Node(k,v) for (k,v) in N])
 end
 function neighborhood(s::AbstractUndirectedStream, node::AbstractString, t::Float64)
-    return
-end
-
-degree(s::AbstractUndirectedStream,node::AbstractString)=duration(s)!=0 ? duration(neighborhood(s,node))/duration(s) : 0.0
-degree(s::AbstractUndirectedStream,node::AbstractString,t::Float64)=length(neighborhood(s,node,t))
-
-average_node_degree(ls::LinkStream)=number_of_nodes(ls)!=0 ? 2.0*number_of_links(ls)/number_of_nodes(ls) : 0.0
-average_node_degree(s::StreamGraph)=duration(s.W)!=0 ? 1.0/duration(s.W)*sum([length(times(s,v)) for v in s.V]) : 0.0
-           
+    neighbors=AbstractString[]
+    for l in links(s,node)
+        if t ∈ l
+            if l.from==node
+                push!(neighbors,l.to)
+            elseif l.to==node
+                push!(neighbors,l.from)
+            end
+        end
+    end
+    neighbors
+end   
 
 #Base.getindex(s::StreamGraph, name::AbstractString)=ls.W[name]
 #Base.getindex(s::AbstractDirectedStream, from::AbstractString, to::AbstractString)=s.E[from][to]
@@ -701,8 +704,18 @@ function clustering(s::AbstractUndirectedStream, v::AbstractString)
         return 0
     end
 end
-#sum([length((times(s,v,u) ∩ times(s,v,w)) ∩ times(s,u,w)) for (u,w) in s.V ⊗ s.V])/sum([length(times(s,v,u) ∩ times(s,v,w)) for (u,w) in s.V ⊗ s.V])
+
 clustering(s::AbstractUndirectedStream)=length(s.V)>0 ? 1.0/length(s.V)*sum([contribution(s,v)*clustering(s,v) for v in s.V]) : 0.0
+
+### DEGREE ###
+degree(s::AbstractUndirectedStream,node::AbstractString)=duration(s)!=0 ? duration(neighborhood(s,node))/duration(s) : 0.0
+degree(s::AbstractUndirectedStream,node::AbstractString,t::Float64)=length(neighborhood(s,node,t))
+degree(s::AbstractUndirectedStream,t::Float64)=length(s.V) != 0 ? 1.0/length(s.V)*sum([degree(s,v,t) for v in s.V]) : 0.0
+degree(s::AbstractUndirectedStream)=length(s.V) != 0 ? 1.0/length(s.V)*sum([degree(s,v) for v in s.V]) : 0.0
+
+average_node_degree(ls::LinkStream)=number_of_nodes(ls)!=0 ? 2.0*number_of_links(ls)/number_of_nodes(ls) : 0.0
+average_node_degree(s::StreamGraph)=duration(s.W)!=0 ? 1.0/duration(s.W)*sum([length(times(s,v))*degree(s,v) for v in s.V]) : 0.0
+        
 
 # ----------- JUMPS -------------
 #

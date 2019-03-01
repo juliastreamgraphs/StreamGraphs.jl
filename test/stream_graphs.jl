@@ -89,6 +89,27 @@ s=load_stream_graph_1()
 @test density(s,"b","d")==1.0/2.0
 @test density(s,"d","b")==1.0/2.0
 @test density(s,"d")==0.25
+Na=neighborhood(s,"a")
+@test length(Na)==2
+@test Na["b"].presence==Intervals([(1.0,3.0),(7.0,8.0)])
+@test Na["c"].presence==Intervals([(4.5,7.5)])
+@test degree(s,"a")==0.6
+@test neighborhood(s,"a",0.0)==[]
+@test neighborhood(s,"a",1.0)==["b"]
+@test Set(neighborhood(s,"a",7.4))==Set(["b","c"])
+@test Set(neighborhood(s,"b",7.4))==Set(["a","c"])
+@test Set(neighborhood(s,"d",2.4))==Set(["b"])
+@test degree(s,"a",0.0)==0
+@test degree(s,"a",1.0)==1
+@test degree(s,"a",7.4)==2
+@test degree(s,"b",7.4)==2
+@test degree(s,"d",2.4)==1
+@test degree(s,0.0)==0.0
+@test degree(s,1.0)==0.5
+@test degree(s,2.0)==1.0
+@test degree(s,6.0)==1.0
+@test degree(s,7.1)==6.0/4.0
+@test degree(s)==0.5
 
 s2a=load_stream_graph_2a()
 s2b=load_stream_graph_2b()
@@ -103,3 +124,7 @@ s6a=load_stream_graph_6a()
 s6b=load_stream_graph_6b()
 @test density(s6a)==1.0
 @test density(s6b)==1.0
+@test degree(s6a,"a")==0.5
+@test degree(s6a,"b")==1.0
+@test degree(s6a,"c")==0.5
+@test average_node_degree(s6a)==0.75
