@@ -26,9 +26,14 @@ end
     include("links.jl")
 end
 
-@testset "Stream Tests" begin
-    @info "Check Streams"
-    include("streams.jl")
+@testset "LinkStream Tests" begin
+    @info "Check LinkStreams"
+    include("link_streams.jl")
+end
+
+@testset "StreamGraph Tests" begin
+    @info "Check StreamGraphs"
+    include("stream_graphs.jl")
 end
 
 @testset "Jump Tests" begin
