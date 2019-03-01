@@ -621,6 +621,7 @@ end
 # ----------- METRICS OF STREAMS -------------
 #
 duration(s::AbstractStream)=length(s.T)
+duration(W::Dict{AbstractString,Node})=sum([duration(v) for (k,v) in W])
 
 node_duration(ls::Union{LinkStream,DirectedLinkStream})=duration(ls)
 node_duration(s::Union{StreamGraph,DirectedStreamGraph})=length(s.V)>0 ? sum([duration(n) for (k,n) in s.W])/length(s.V) : 0
@@ -639,16 +640,39 @@ number_of_nodes(ls::Union{LinkStream,DirectedLinkStream})=length(ls.V)
 number_of_links(s::AbstractStream)=sum([contribution(s,l) for (k,v) in s.E for (kk,l) in v])
 
 density(ls::Union{LinkStream,DirectedLinkStream})=2 * sum([duration(l) for (k,v) in ls.E for (kk,l) in v]) / (length(ls.V)*(length(ls.V)-1)*duration(ls)) 
+function density(s::Union{StreamGraph,DirectedStreamGraph})
+    denom = sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])
+    denom != 0 ? sum([duration(l) for (k,v) in s.E for (kk,l) in v]) / denom : 0
+end
 density(ls::Union{LinkStream,DirectedLinkStream}, t::Float64)=length(ls.V)>1 ? 2 * sum([duration(l) for l in links(ls,t)])/(length(ls.V)*(length(ls.V)-1)) : 0
 density(ls::Union{LinkStream,DirectedLinkStream},n1::AbstractString,n2::AbstractString)=duration(ls)!=0 ? duration(links(ls,n1,n2))/duration(ls) : 0
 
-coverage(ls::Union{LinkStream,DirectedLinkStream})=1
+coverage(ls::Union{LinkStream,DirectedLinkStream})=1.0
+coverage(s::Union{StreamGraph,DirectedStreamGraph})=((length(s.V)!=0) & (duration(s)!=0)) ? sum([duration(n) for (k,n) in s.W])/(duration(s)*length(s.V)) : 0.0
 
-compactness(ls::Union{LinkStream,DirectedLinkStream})=1
+compactness(ls::Union{LinkStream,DirectedLinkStream})=1.0
 
-uniformity(ls::Union{LinkStream,DirectedLinkStream})=1
+uniformity(ls::Union{LinkStream,DirectedLinkStream})=1.0
+uniformity(s::Union{StreamGraph,DirectedStreamGraph})=sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])/sum([length(times(s,u) ∪ times(s,v)) for (u,v) in s.V ⊗ s.V])
 
-clustering(s::AbstractUndirectedStream, v::AbstractString)=sum([length((times(s,v,u) ∩ times(s,v,w)) ∩ times(s,u,w)) for (u,w) in s.V ⊗ s.V])/sum([length(times(s,v,u) ∩ times(s,v,w)) for (u,w) in s.V ⊗ s.V])
+function clustering(s::AbstractUndirectedStream, v::AbstractString)
+    nomin=0
+    denom=0
+    N=Set(AbstractString[])
+    for n in keys(neighborhood(s,v))
+        push!(N,n)
+    end
+    for (u,w) in N ⊗ N
+        nomin+=length((times(s,v,u) ∩ times(s,v,w)) ∩ times(s,u,w))
+        denom+=length(times(s,v,u) ∩ times(s,v,w))
+    end
+    if denom != 0
+        return nomin/denom
+    else
+        return 0
+    end
+end
+#sum([length((times(s,v,u) ∩ times(s,v,w)) ∩ times(s,u,w)) for (u,w) in s.V ⊗ s.V])/sum([length(times(s,v,u) ∩ times(s,v,w)) for (u,w) in s.V ⊗ s.V])
 clustering(s::AbstractUndirectedStream)=length(s.V)>0 ? 1.0/length(s.V)*sum([contribution(s,v)*clustering(s,v) for v in s.V]) : 0.0
 
 # ----------- JUMPS -------------
