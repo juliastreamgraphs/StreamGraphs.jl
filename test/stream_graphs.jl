@@ -38,3 +38,4 @@ s=load_stream_graph_1()
 @test isapprox(link_duration(s),1.6666666;atol=0.00001)
 @test uniformity(s)==0.39285714285714285
 @test density(s)==0.45454545454545453
+@test density(s,2.0)==2.0/3.0
