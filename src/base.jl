@@ -650,6 +650,10 @@ function density(s::Union{StreamGraph,DirectedStreamGraph}, t::Float64)
     length(Vt)!=0 ? length(links(s,t))/length(Vt ⊗ Vt) : 0.0
 end
 density(ls::Union{LinkStream,DirectedLinkStream},n1::AbstractString,n2::AbstractString)=duration(ls)!=0 ? duration(links(ls,n1,n2))/duration(ls) : 0
+function density(s::Union{StreamGraph,DirectedStreamGraph},n1::AbstractString,n2::AbstractString)
+    denom=length(times(s,n1) ∩ times(s,n2))
+    denom != 0 ? length(times(s,n1,n2))/denom : 0.0
+end
 
 coverage(ls::Union{LinkStream,DirectedLinkStream})=1.0
 coverage(s::Union{StreamGraph,DirectedStreamGraph})=((length(s.V)!=0) & (duration(s)!=0)) ? sum([duration(n) for (k,n) in s.W])/(duration(s)*length(s.V)) : 0.0

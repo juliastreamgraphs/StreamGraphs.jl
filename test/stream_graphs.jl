@@ -39,3 +39,7 @@ s=load_stream_graph_1()
 @test uniformity(s)==0.39285714285714285
 @test density(s)==0.45454545454545453
 @test density(s,2.0)==2.0/3.0
+@test density(s,"a","b")==1.0/3.0
+@test density(s,"b","a")==1.0/3.0
+@test density(s,"b","d")==1.0/2.0
+@test density(s,"d","b")==1.0/2.0
