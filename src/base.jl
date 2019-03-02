@@ -366,11 +366,13 @@ DirectedLinkStream(name::AbstractString,T::Intervals) = DirectedLinkStream(name,
 StreamGraph(name::AbstractString) = StreamGraph(name, Intervals([]), Set(), Dict(), Dict())
 StreamGraph(name::AbstractString,T::Intervals) = StreamGraph(name, T, Set(), Dict(), Dict())
 
+### NODES ###
 nodes(ls::Union{LinkStream,DirectedLinkStream})=ls.V
 nodes(ls::Union{LinkStream,DirectedLinkStream},t::Float64)=ls.V
 nodes(s::Union{StreamGraph,DirectedStreamGraph}, t::Float64)=[n for (n,interv) in s.W if t ∈ interv]
 nodes(s::Union{StreamGraph,DirectedStreamGraph})=[b for (a,b) in s.W]
 
+### LINKS ###
 links(s::AbstractStream)=[l for (k,v) in s.E for (kk,l) in v]
 links(s::AbstractStream,t::Float64)=[l for (k,v) in s.E for (kk,l) in v if t ∈ l]
 links(s::AbstractDirectedStream,from::AbstractString,to::AbstractString)=s.E[from][to]
@@ -395,9 +397,11 @@ function links(s::AbstractUndirectedStream,node::AbstractString)
     result
 end
 
+### TIMES ###
 times(ls::Union{LinkStream,DirectedLinkStream}, name::AbstractString)=name ∈ ls ? ls.T : []
 times(s::Union{StreamGraph,DirectedStreamGraph}, name::AbstractString)=name ∈ s ? s.W[name].presence : Intervals()
 times(ls::AbstractDirectedStream, from::AbstractString, to::AbstractString)=haskey(ls.E,from)&haskey(ls.E[from],to) ? ls.E[from][to].presence : Intervals()
+
 function times(ls::AbstractUndirectedStream, from::AbstractString, to::AbstractString)
     if from==to
         return Intervals()
@@ -414,6 +418,7 @@ function times(ls::AbstractUndirectedStream, from::AbstractString, to::AbstractS
         return Intervals()
     end
 end
+
 function times(ls::Union{LinkStream,DirectedLinkStream})
     evt = Set{Float64}([ls.T.list[1][1],ls.T.list[1][2]])
     for l in links(ls)
@@ -424,6 +429,7 @@ function times(ls::Union{LinkStream,DirectedLinkStream})
     end
     sort(collect(evt))
 end
+
 function times(s::Union{StreamGraph,DirectedStreamGraph})
     evt = Set{Float64}([s.T.list[1][1],s.T.list[1][2]])
     for n in nodes(s)
@@ -460,6 +466,7 @@ function neighborhood(s::AbstractUndirectedStream, node::AbstractString)
     end
     Dict{AbstractString,Node}([k=>Node(k,v) for (k,v) in N])
 end
+
 function neighborhood(s::AbstractUndirectedStream, node::AbstractString, t::Float64)
     neighbors=AbstractString[]
     for l in links(s,node)
@@ -674,16 +681,26 @@ node_contribution(s::AbstractStream,t::Float64)=length(nodes(s,t))/length(s.V)
 link_contribution(s::AbstractStream,t::Float64)=length(links(s,t))/length(s.V ⊗ s.V)
 
 ### NUMBER OF NODES ###
-number_of_nodes(s::Union{StreamGraph,DirectedStreamGraph})=sum([contribution(s,n) for (k,n) in s.W])
+number_of_nodes(s::Union{StreamGraph,DirectedStreamGraph})=length(s.W) != 0 ? sum([contribution(s,n) for (k,n) in s.W]) : 0.0
 number_of_nodes(ls::Union{LinkStream,DirectedLinkStream})=length(ls.V)
 
 ### NUMBER OF LINKS ###
-number_of_links(s::AbstractStream)=sum([contribution(s,l) for (k,v) in s.E for (kk,l) in v])
+number_of_links(s::AbstractStream)=length(s.E) != 0 ? sum([contribution(s,l) for (k,v) in s.E for (kk,l) in v]) : 0.0
 
 ### DENSITY ###
-density(ls::Union{LinkStream,DirectedLinkStream})=2 * sum([duration(l) for (k,v) in ls.E for (kk,l) in v]) / (length(ls.V)*(length(ls.V)-1)*duration(ls)) 
+function density(ls::Union{LinkStream,DirectedLinkStream})
+    if (length(ls.V)==0) | (length(ls.E)==0)
+        return 0.0
+    end
+    nom=2 * sum([duration(l) for (k,v) in ls.E for (kk,l) in v])
+    denom=(length(ls.V)*(length(ls.V)-1)*duration(ls))
+    denom != 0 ? nom/denom : 0.0
+end
 
 function density(s::Union{StreamGraph,DirectedStreamGraph})
+    if (length(s.V)==0) | (length(s.E)==0)
+        return 0.0
+    end
     denom = sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])
     denom != 0 ? sum([duration(l) for (k,v) in s.E for (kk,l) in v]) / denom : 0
 end
@@ -714,10 +731,20 @@ coverage(s::Union{StreamGraph,DirectedStreamGraph})=((length(s.V)!=0) & (duratio
 
 ### COMPACTNESS ###
 compactness(ls::Union{LinkStream,DirectedLinkStream})=1.0
+function compactness(s::Union{StreamGraph,DirectedStreamGraph})
+    throw("Not Yet Implemented...")
+end
 
 ### UNIFORMITY ###
 uniformity(ls::Union{LinkStream,DirectedLinkStream})=1.0
-uniformity(s::Union{StreamGraph,DirectedStreamGraph})=sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])/sum([length(times(s,u) ∪ times(s,v)) for (u,v) in s.V ⊗ s.V])
+function uniformity(s::Union{StreamGraph,DirectedStreamGraph})
+    if length(s.V)==0
+        return 0.0
+    end
+    nom=sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])
+    denom=sum([length(times(s,u) ∪ times(s,v)) for (u,v) in s.V ⊗ s.V])
+    denom != 0 ? nom/denom : 0.0
+end
 
 ### CLUSTERING ###
 function node_clustering(s::AbstractUndirectedStream, v::AbstractString)
@@ -797,6 +824,7 @@ function average_time_degree(s::AbstractStream)
     τ = times(s)
     k != 0 ? 1.0/k*sum([node_contribution(s,0.5*(t[2]+t[1]))*degree(s,0.5*(t[2]+t[1]))*(t[2]-t[1]) for t in zip(τ[1:end-1],τ[2:end])]) : 0.0
 end
+
 # ----------- JUMPS -------------
 #
 struct Jump
