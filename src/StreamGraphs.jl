@@ -28,7 +28,7 @@ export
 		DirectedLinkStream, DirectedStreamGraph,
 		times, nodes, links, links_from, links_to,
 		neighborhood, degree, average_node_degree,
-		average_time_degree,
+		average_time_degree, State,
 
 		# Paths
 		Jump, DurationJump, Path, DurationPath,

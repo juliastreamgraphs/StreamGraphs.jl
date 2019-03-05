@@ -868,6 +868,18 @@ function average_time_degree(s::AbstractStream)
     k != 0 ? 1.0/k*sum([node_contribution(s,0.5*(t[2]+t[1]))*degree(s,0.5*(t[2]+t[1]))*(t[2]-t[1]) for t in zip(τ[1:end-1],τ[2:end])]) : 0.0
 end
 
+# ----------- STATE -------------
+#
+mutable struct State
+    t0::Float64
+    t1::Float64
+    nodes::Set{AbstractString}
+    links::Set{Tuple{AbstractString,AbstractString}}
+end
+duration(s::State)=s.t1-s.t0
+number_of_nodes(s::State)=length(s.nodes)
+number_of_links(s::State)=length(s.links)
+
 # ----------- JUMPS -------------
 #
 struct Jump
