@@ -41,6 +41,11 @@ end
     include("stream_graphs.jl")
 end
 
+@testset "TimeCursor Tests" begin
+    @info "Check TimeCursors"
+    include("time_cursors.jl")
+end
+
 @testset "Jump Tests" begin
     @info "Check Jumps"
     include("jumps.jl")
