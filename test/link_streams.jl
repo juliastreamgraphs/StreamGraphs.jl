@@ -51,7 +51,7 @@ record!(ls,2.0,2.6,"a","c")
 @test link_duration(ls) == 4.6/3.0
 
 ls = LinkStream("test-figure-1",Intervals([(0.0,10.0)]))
-load!(ls,"./test_data/link_stream_1.txt")
+load!(ls,"./test_data/link_stream_1.txt","abuv")
 @test ls.T == Intervals([(0.0,10.0)])
 @test ls.V == Set(["a","b","c","d"])
 @test 1.55 ∈ times(ls,"a","b")
