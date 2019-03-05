@@ -6,6 +6,10 @@ abstract type AbstractPath end
 
 # ----------- SETS -------------
 #
+function -(S1::Set{T},S2::Set{T}) where T
+    setdiff(S1,S2)
+end
+
 function ×(S1::Set{T},S2::Set{T}) where T
     S=Set()
     for s1 in S1

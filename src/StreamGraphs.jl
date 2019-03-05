@@ -15,6 +15,7 @@ import Base.∪
 import Base.∩
 import Base.⊆
 import Base.+
+import Base.-
 import Base: length, count, match, merge, merge!
 
 ########################################
@@ -48,7 +49,7 @@ export
 		match, get_idx, is_connected, is_valid, start, finish,
 
 		# Operators
-		==, ≈, ∈, ∪, ∩, ⊆, +, ×, ⊗
+		==, ≈, ∈, ∪, ∩, ⊆, +, -, ×, ⊗
 
 #######################################
 # Includes
