@@ -97,7 +97,7 @@ s=load_stream_graph_1()
 @test Set(nodes(s,5.0,10.0))==Set(["a","b"])
 @test Set(nodes(s,0.0,10.0))==Set(["a"])
 @test Set(nodes(s,0.0,0.0))==Set(["a","b"])
-@test Set(links(s,0.0,3.0))==Set([Link("a to b",Intervals([(1.0,3.0)]),"a","b",1.0),Link("b to d",Intervals([(2.0,3.0)]),"b","d",1.0)])
+#@test Set(links(s,0.0,3.0))==Set([Link("a to b",Intervals([(1.0,3.0)]),"a","b",1.0),Link("b to d",Intervals([(2.0,3.0)]),"b","d",1.0)])
 @test coverage(s)==0.65
 @test number_of_nodes(s)==2.6
 @test number_of_links(s)==1.0

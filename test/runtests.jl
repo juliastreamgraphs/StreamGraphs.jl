@@ -6,6 +6,11 @@ using Logging
 gl = global_logger()
 global_logger(ConsoleLogger(gl.stream, Logging.Error))
 
+@testset "Sets Tests" begin
+    @info "Check operations on sets"
+    include("sets.jl")
+end
+
 @testset "Tuple Tests" begin
     @info "Check tuple equality approximation"
     include("tuples.jl")
