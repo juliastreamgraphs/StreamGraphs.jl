@@ -369,8 +369,10 @@ StreamGraph(name::AbstractString,T::Intervals) = StreamGraph(name, T, Set(), Dic
 ### NODES ###
 nodes(ls::Union{LinkStream,DirectedLinkStream})=ls.V
 nodes(ls::Union{LinkStream,DirectedLinkStream},t::Float64)=ls.V
-nodes(s::Union{StreamGraph,DirectedStreamGraph}, t::Float64)=[n for (n,interv) in s.W if t ∈ interv]
+nodes(ls::Union{LinkStream,DirectedLinkStream},t0::Float64,t1::Float64)=ls.V
+nodes(s::Union{StreamGraph,DirectedStreamGraph},t::Float64)=[n for (n,interv) in s.W if t ∈ interv]
 nodes(s::Union{StreamGraph,DirectedStreamGraph})=[b for (a,b) in s.W]
+nodes(s::Union{StreamGraph,DirectedStreamGraph},t0::Float64,t1::Float64)=t0<=t1 ? [n for (n,interv) in s.W if Intervals([(t0,t1)]) ⊆ interv] : []
 
 ### LINKS ###
 links(s::AbstractStream)=[l for (k,v) in s.E for (kk,l) in v]
@@ -379,6 +381,7 @@ links(s::AbstractDirectedStream,from::AbstractString,to::AbstractString)=s.E[fro
 links(s::AbstractUndirectedStream,from::AbstractString,to::AbstractString)=from<to ? s.E[from][to] : s.E[to][from]
 links_from(s::AbstractDirectedStream,node::AbstractString)=haskey(s.E,node) ? s.E[node] : []
 links_to(s::AbstractDirectedStream,node::AbstractString)=[l for l in to[node] for (from,to) in s.E if haskey(to,node)]
+
 function links(s::AbstractUndirectedStream,node::AbstractString)
     result = Link[]
     for (from,access) in s.E
@@ -390,6 +393,42 @@ function links(s::AbstractUndirectedStream,node::AbstractString)
             for (to,l) in access
                 if to==node
                     push!(result,l)
+                end
+            end
+        end
+    end
+    result
+end
+
+function links(s::AbstractStream,t0::Float64,t1::Float64)
+    if t0>t1
+        return []
+    end
+    result=Link[]
+    t0t1=Intervals([(t0,t1)])
+    for (k,v) in s.E
+        for (kk,l) in v
+            inter=t0t1 ∩ l.presence
+            if length(inter)>0
+                push!(result,Link(l.name,inter,l.from,l.to,l.weight))
+            end
+        end
+    end
+    result
+end
+
+function links(s::AbstractStream,node::AbstractString,t0::Float64,t1::Float64)
+    if t0 > t1
+        return []
+    end
+    result=Link[]
+    t0t1=Intervals([(t0,t1)])
+    for (k,v) in s.E
+        for (kk,l) in v
+            if l.from==node | l.to==node
+                inter=t0t1 ∩ l
+                if length(inter)>0
+                    push!(result,Link(l.name,inter,l.from,l.to,l.weight))
                 end
             end
         end
