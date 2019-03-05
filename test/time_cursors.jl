@@ -129,3 +129,5 @@ goto!(tc,3.0)
 @test nodes(tc,3.9999,4.0)==Set(["a","b","c"])
 @test nodes(tc,4.0,4.0001)==Set(["a","b","c"])
 @test nodes(tc,4.00001,4.1)==Set(["a","c"])
+@test density(tc)==0.0
+@test density(tc,0.0,10.0)==8.0/12.0

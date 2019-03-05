@@ -974,6 +974,8 @@ function nodes(tc::TimeCursor,t::Float64)
     end
 end
 
+number_of_nodes(tc::TimeCursor,t::Float64)=length(nodes(tc,t))
+
 function nodes(tc::TimeCursor,t0::Float64,t1::Float64)
     N=Set{AbstractString}()
     goto!(tc,t0)
@@ -990,6 +992,8 @@ function nodes(tc::TimeCursor,t0::Float64,t1::Float64)
     N
 end
 
+number_of_nodes(tc::TimeCursor,t0::Float64,t1::Float64)=length(nodes(tc,t0,t1))
+
 ## Link queries on the cursor ##
 number_of_links(tc::TimeCursor)=number_of_links(tc.S)
 links(tc::TimeCursor)=tc.S.links
@@ -1005,6 +1009,8 @@ function links(tc::TimeCursor,t::Float64)
     end
 end
 
+number_of_links(tc::TimeCursor,t::Float64)=length(links(tc,t))
+
 function links(tc::TimeCursor,t0::Float64,t1::Float64)
     L=Set{Tuple{AbstractString,AbstractString}}()
     goto!(tc,t0)
@@ -1019,7 +1025,23 @@ function links(tc::TimeCursor,t0::Float64,t1::Float64)
         L=L ∪ links(tc)
     end
     L
-end     
+end
+
+number_of_links(tc::TimeCursor,t0::Float64,t1::Float64)=length(links(tc,t0,t1))
+
+density(tc::TimeCursor)=number_of_nodes(tc) > 1 ? (2*number_of_links(tc))/(number_of_nodes(tc)*(number_of_nodes(tc)-1)) : 0.0
+
+function density(tc::TimeCursor,t::Float64)
+    n=number_of_nodes(tc,t)
+    m=number_of_links(tc,t)
+    n > 1 ? (2*m)/(n*(n-1)) : 0.0
+end
+
+function density(tc::TimeCursor,t0::Float64,t1::Float64)
+    n=number_of_nodes(tc,t0,t1)
+    m=number_of_links(tc,t0,t1)
+    n > 1 ? (2*m)/(n*(n-1)) : 0.0
+end
 
 # ----------- JUMPS -------------
 #
