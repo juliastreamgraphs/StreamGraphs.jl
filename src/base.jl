@@ -937,12 +937,26 @@ end
 next_transition(tc::TimeCursor)=haskey(tc.T,tc.S.t1) ? tc.T[tc.S.t1] : throw("No transition in TimeMap at t=$(tc.S.t1)")
 previous_transition(tc::TimeCursor)=haskey(tc.T,tc.S.t0) ? tc.T[tc.S.t0] : throw("No transition in TimeMap at t=$(tc.S.t0)")
 next!(tc::TimeCursor)=haskey(tc.T,tc.S.t1) && apply!(tc.S,next_transition(tc))
-previous!(tc::TimeCursor)=haskey(tc.S,tc.S.t0) && apply!(tc.S,previous_transition(tc))
+previous!(tc::TimeCursor)=haskey(tc.T,tc.S.t0) && apply!(tc.S,previous_transition(tc))
 
 function goto!(tc::TimeCursor,t::Float64)
     while !(tc.S.t0 <= t < tc.S.t1)
         t >= tc.S.t1 ? next!(tc) : previous!(tc)
     end
+end
+
+function start!(tc::TimeCursor)
+    while haskey(tc.T,tc.S.t0)
+        previous!(tc)
+    end
+    next!(tc)
+end
+
+function end!(tc::TimeCursor)
+    while haskey(tc.T,tc.S.t1)
+        next!(tc)
+    end
+    previous!(tc)
 end
 
 ## Node queries on the cursor ##
@@ -953,7 +967,7 @@ function nodes(tc::TimeCursor,t::Float64)
     goto!(tc,t)
     if haskey(tc.T,t)
         s1=nodes(tc)
-        next!(tc)
+        previous!(tc)
         return s1 ∪ nodes(tc)
     else
         return nodes(tc)
@@ -984,7 +998,7 @@ function links(tc::TimeCursor,t::Float64)
     goto!(tc,t)
     if haskey(tc.T,t)
         s1=links(tc)
-        next!(tc)
+        previous!(tc)
         return s1 ∪ links(tc)
     else
         return links(tc)
