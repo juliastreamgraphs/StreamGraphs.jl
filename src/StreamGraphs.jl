@@ -44,7 +44,8 @@ export
 		node_clustering, time_clustering, clustering, coverage, 
 		uniformity,
 
-		Δnodes, Δlinks, apply!,
+		Δnodes, Δlinks, apply!, next_transition, previous_transition,
+		next!, previous!, goto!,
 
 		# functions
 		count, length, merge, merge!, push, clean, from_match, to_match, 

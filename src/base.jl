@@ -926,6 +926,87 @@ function apply!(s::State,τ::Transition)
     end
 end
 
+# ----------- TIME CURSOR -------------
+#
+mutable struct TimeCursor
+    S::State
+    T::Dict{Float64,Transition}
+end
+
+## Move the cursor in the Stream ##
+next_transition(tc::TimeCursor)=haskey(tc.T,tc.S.t1) ? tc.T[tc.S.t1] : throw("No transition in TimeMap at t=$(tc.S.t1)")
+previous_transition(tc::TimeCursor)=haskey(tc.T,tc.S.t0) ? tc.T[tc.S.t0] : throw("No transition in TimeMap at t=$(tc.S.t0)")
+next!(tc::TimeCursor)=haskey(tc.T,tc.S.t1) && apply!(tc.S,next_transition(tc))
+previous!(tc::TimeCursor)=haskey(tc.S,tc.S.t0) && apply!(tc.S,previous_transition(tc))
+
+function goto!(tc::TimeCursor,t::Float64)
+    while !(tc.S.t0 <= t < tc.S.t1)
+        t >= tc.S.t1 ? next!(tc) : previous!(tc)
+    end
+end
+
+## Node queries on the cursor ##
+number_of_nodes(tc::TimeCursor)=number_of_nodes(tc.S)
+nodes(tc::TimeCursor)=tc.S.nodes
+
+function nodes(tc::TimeCursor,t::Float64)
+    goto!(tc,t)
+    if haskey(tc.T,t)
+        s1=nodes(tc)
+        next!(tc)
+        return s1 ∪ nodes(tc)
+    else
+        return nodes(tc)
+    end
+end
+
+function nodes(tc::TimeCursor,t0::Float64,t1::Float64)
+    N=Set{AbstractString}()
+    goto!(tc,t0)
+    haskey(tc.T,t0) && previous!(tc)
+    N=N ∪ nodes(tc)
+    while tc.S.t1 < t1
+        next!(tc)
+        N=N ∪ nodes(tc)
+    end
+    if haskey(tc.T,t1)
+        next!(tc)
+        N=N ∪ nodes(tc)
+    end
+    N
+end
+
+## Link queries on the cursor ##
+number_of_links(tc::TimeCursor)=number_of_links(tc.S)
+links(tc::TimeCursor)=tc.S.links
+
+function links(tc::TimeCursor,t::Float64)
+    goto!(tc,t)
+    if haskey(tc.T,t)
+        s1=links(tc)
+        next!(tc)
+        return s1 ∪ links(tc)
+    else
+        return links(tc)
+    end
+end
+
+function links(tc::TimeCursor,t0::Float64,t1::Float64)
+    L=Set{Tuple{AbstractString,AbstractString}}()
+    goto!(tc,t0)
+    haskey(tc.T,t0) && previous!(tc)
+    L=L ∪ links(tc)
+    while tc.S.t1 < t1
+        next!(tc)
+        L=L ∪ links(tc)
+    end
+    if haskey(tc.T,t1)
+        next!(tc)
+        L=L ∪ links(tc)
+    end
+    L
+end     
+
 # ----------- JUMPS -------------
 #
 struct Jump
