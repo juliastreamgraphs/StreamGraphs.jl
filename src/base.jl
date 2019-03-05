@@ -876,9 +876,55 @@ mutable struct State
     nodes::Set{AbstractString}
     links::Set{Tuple{AbstractString,AbstractString}}
 end
+
 duration(s::State)=s.t1-s.t0
 number_of_nodes(s::State)=length(s.nodes)
 number_of_links(s::State)=length(s.links)
+
+# ----------- TRANSITION -------------
+#
+struct Transition
+    tprev::Float64
+    t::Float64
+    tnxt::Float64
+    node_arrivals::Set{AbstractString}
+    node_departures::Set{AbstractString}
+    link_arrivals::Set{Tuple{AbstractString,AbstractString}}
+    link_departures::Set{Tuple{AbstractString,AbstractString}}
+end
+
+Δnodes(t::Transition)=length(t.node_arrivals)-length(t.node_departures)
+Δlinks(t::Transition)=length(t.link_arrivals)-length(t.link_departures)
+
+function apply!(s::State,τ::Transition)
+    # Moving backward
+    if s.t0 == τ.t
+        s.t0=τ.tprev
+        s.t1=τ.t
+        length(τ.node_arrivals - s.nodes)>0 && throw("<Backward Move> Absent nodes cannot leave the state.")
+        s.nodes=s.nodes - τ.node_arrivals
+        length(s.nodes ∩ τ.node_departures)>0 && throw("<Backward Move> Nodes already present in state cannot arrive in Transition.")
+        s.nodes=s.nodes ∪ τ.node_departures
+        length(τ.link_arrivals - s.links)>0 && throw("<Backward Move> Absent links cannot leave the state.")
+        s.links=s.links - τ.link_arrivals
+        length(s.links ∩ τ.link_arrivals)>0 && throw("<Backward Move> Links already present in state cannot arrive in Transition.")
+        s.links=s.links ∪ τ.link_departures
+    # Moving forward
+    elseif s.t1 == τ.t
+        s.t0=τ.t
+        s.t1=τ.tnxt
+        length(τ.node_departures - s.nodes)>0 && throw("<Forward Move> Absent nodes cannot leave the state.")
+        s.nodes=s.nodes - τ.node_departures
+        length(s.nodes ∩ τ.node_arrivals)>0 && throw("<Forward Move> Nodes already present in state cannot arrive in Transition.")                
+        s.nodes=s.nodes ∪ τ.node_arrivals
+        length(τ.link_departures - s.links)>0 && throw("<Forward Move> Absent links cannot leave the state.")
+        s.links=s.links - τ.link_departures
+        length(s.links ∩ τ.link_arrivals)>0 && throw("<Forward Move> Links already present in state cannot arrive in Transition.")
+        s.links=s.links ∪ τ.link_arrivals 
+    else
+        throw("Cannot apply transition to given state.")
+    end
+end
 
 # ----------- JUMPS -------------
 #

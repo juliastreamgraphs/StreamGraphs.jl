@@ -28,7 +28,7 @@ export
 		DirectedLinkStream, DirectedStreamGraph,
 		times, nodes, links, links_from, links_to,
 		neighborhood, degree, average_node_degree,
-		average_time_degree, State,
+		average_time_degree, State, Transition,
 
 		# Paths
 		Jump, DurationJump, Path, DurationPath,
@@ -43,6 +43,8 @@ export
 
 		node_clustering, time_clustering, clustering, coverage, 
 		uniformity,
+
+		Δnodes, Δlinks, apply!,
 
 		# functions
 		count, length, merge, merge!, push, clean, from_match, to_match, 
