@@ -971,7 +971,7 @@ number_of_links(s::State)=length(s.links)
 
 # ----------- TRANSITION -------------
 #
-struct Transition
+mutable struct Transition
     tprev::Float64
     t::Float64
     tnxt::Float64
@@ -1129,6 +1129,55 @@ function density(tc::TimeCursor,t0::Float64,t1::Float64)
     n=number_of_nodes(tc,t0,t1)
     m=number_of_links(tc,t0,t1)
     n > 1 ? (2*m)/(n*(n-1)) : 0.0
+end
+
+function load!(tc::TimeCursor,events::Vector{Event})
+    tprev::Float64=events[1].t-0.1
+    t::Float64=events[1].t
+    tc.S=State(tprev,t,Set(),Set())
+    idx::Int64=1
+    node_arrivals=Set{AbstractString}()
+    node_departures=Set{AbstractString}()
+    link_arrivals=Set{Tuple{AbstractString,AbstractString}}()
+    link_departures=Set{Tuple{AbstractString,AbstractString}}()
+    transitions=Transition[]
+    while idx <= length(events)
+        while (idx <= length(events)) && (events[idx].t==t)
+            if typeof(events[idx])==NodeEvent
+                if events[idx].arrive
+                    push!(node_arrivals,events[idx].object)
+                else
+                    push!(node_departures,events[idx].object)
+                end
+            else
+                if events[idx].arrive
+                    push!(link_arrivals,events[idx].object)
+                else
+                    push!(link_departures,events[idx].object)
+                end
+            end
+            idx += 1
+        end
+        if length(transitions)>0
+            transitions[end].tnxt=t
+        end
+        push!(transitions,Transition(tprev,t,-1,deepcopy(node_arrivals),
+                                                deepcopy(node_departures),
+                                                deepcopy(link_arrivals),
+                                                deepcopy(link_departures)))
+        empty!(node_arrivals)
+        empty!(node_departures)
+        empty!(link_arrivals)
+        empty!(link_departures)
+        tprev=t
+        if idx<=length(events)
+            t=events[idx].t
+        end
+    end
+    transitions[end].tnxt=t
+    for τ in transitions
+        tc.T[τ.t]=τ
+    end
 end
 
 # ----------- JUMPS -------------

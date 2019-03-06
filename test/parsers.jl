@@ -27,6 +27,12 @@ events=parse_to_events("./test_data/auv_test_1.txt","auv",0.05)
 @test events[6]==LinkEvent(0.625,false,("a","c"))
 @test events[7]==LinkEvent(0.975,true,("a","b"))
 @test events[8]==LinkEvent(1.025,false,("a","b"))
+tc=TimeCursor(State(0.0,0.0,Set(),Set()),Dict{Float64,Transition}())
+load!(tc,events)
+next!(tc)
+@test tc.S.t0==-0.025
+@test tc.S.t1==0.025
+@test links(tc)==Set([("a","b")])
 
 events=parse_to_events("./test_data/auv_test_1.txt","auv",0.1)
 @test length(events)==6
