@@ -564,13 +564,6 @@ contribution(s::AbstractUndirectedStream, from::AbstractString, to::AbstractStri
 node_contribution(s::AbstractStream,t::Float64)=length(nodes(s,t))/length(s.V)
 link_contribution(s::AbstractStream,t::Float64)=length(links(s,t))/length(s.V ⊗ s.V)
 
-### NUMBER OF NODES ###
-number_of_nodes(s::Union{StreamGraph,DirectedStreamGraph})=length(s.W) != 0 ? sum([contribution(s,n) for (k,n) in s.W]) : 0.0
-number_of_nodes(ls::Union{LinkStream,DirectedLinkStream})=length(ls.V)
-
-### NUMBER OF LINKS ###
-number_of_links(s::AbstractStream)=length(s.E) != 0 ? sum([contribution(s,l) for (k,v) in s.E for (kk,l) in v]) : 0.0
-
 ### COVERAGE ###
 coverage(ls::Union{LinkStream,DirectedLinkStream})=1.0
 coverage(s::Union{StreamGraph,DirectedStreamGraph})=((length(s.V)!=0) & (duration(s)!=0)) ? sum([duration(n) for (k,n) in s.W])/(duration(s)*length(s.V)) : 0.0
@@ -600,10 +593,6 @@ mutable struct State
     nodes::Set{AbstractString}
     links::Set{Tuple{AbstractString,AbstractString}}
 end
-
-
-number_of_nodes(s::State)=length(s.nodes)
-number_of_links(s::State)=length(s.links)
 
 # ----------- TRANSITION -------------
 #
@@ -684,15 +673,8 @@ function end!(tc::TimeCursor)
 end
 
 ## Node queries on the cursor ##
-number_of_nodes(tc::TimeCursor)=number_of_nodes(tc.S)
-
-number_of_nodes(tc::TimeCursor,t::Float64)=length(nodes(tc,t))
-
-number_of_nodes(tc::TimeCursor,t0::Float64,t1::Float64)=length(nodes(tc,t0,t1))
 
 ## Link queries on the cursor ##
-number_of_links(tc::TimeCursor)=number_of_links(tc.S)
-
 function links(tc::TimeCursor,t::Float64)
     goto!(tc,t)
     if haskey(tc.T,t)
@@ -703,10 +685,6 @@ function links(tc::TimeCursor,t::Float64)
         return links(tc)
     end
 end
-
-number_of_links(tc::TimeCursor,t::Float64)=length(links(tc,t))
-
-number_of_links(tc::TimeCursor,t0::Float64,t1::Float64)=length(links(tc,t0,t1))
 
 function load!(tc::TimeCursor,events::Vector{Event})
     tprev::Float64=events[1].t-0.1
