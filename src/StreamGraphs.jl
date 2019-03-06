@@ -45,7 +45,7 @@ export
 		uniformity,
 
 		Δnodes, Δlinks, apply!, next_transition, previous_transition,
-		next!, previous!, goto!, start!, end!, Event, object_type,
+		next!, previous!, goto!, start!, end!, Event, NodeEvent, LinkEvent,
 
 		parse_line_auv, parse_line_abuv, parse_line, parse_to_events,
 		string, dump,
