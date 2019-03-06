@@ -19,3 +19,5 @@ number_of_links(tc::TimeCursor)=number_of_links(tc.S)
 number_of_links(tc::TimeCursor,t::Float64)=length(links(tc,t))
 
 number_of_links(tc::TimeCursor,t0::Float64,t1::Float64)=length(links(tc,t0,t1))
+
+length(p::AbstractPath)=length(p.jumps)

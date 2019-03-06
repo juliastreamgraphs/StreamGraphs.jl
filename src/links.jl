@@ -79,6 +79,17 @@ function links(tc::TimeCursor,t0::Float64,t1::Float64)
     L
 end
 
+function links(tc::TimeCursor,t::Float64)
+    goto!(tc,t)
+    if haskey(tc.T,t)
+        s1=links(tc)
+        previous!(tc)
+        return s1 ∪ links(tc)
+    else
+        return links(tc)
+    end
+end
+
 links(s::AbstractStream,tc::TimeCursor,t::Float64)=links(tc,t)
 
 function links(s::AbstractStream,tc::TimeCursor,t0::Float64,t1::Float64)

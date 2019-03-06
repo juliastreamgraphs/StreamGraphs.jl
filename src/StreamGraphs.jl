@@ -84,5 +84,6 @@ include("uniformity.jl")
 include("density.jl")
 include("clustering.jl")
 include("degree.jl")
+include("additions.jl")
 
 end
