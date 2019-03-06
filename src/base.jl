@@ -736,6 +736,16 @@ end
 
 ==(e1::Event,e2::Event)=(e1.t==e2.t)&(e1.arrive==e2.arrive)&(e1.object==e2.object)
 
+function string(e::Event)
+    if typeof(e.object)<:Tuple{AbstractString,AbstractString}
+        e.arrive ? "$(e.t) + $(e.object[1]) $(e.object[2])" : "$(e.t) - $(e.object[1]) $(e.object[2])"
+    elseif typeof(e.object)<:AbstractString
+        e.arrive ? "$(e.t) + $(e.object)" : "$(e.t) - $(e.object)"
+    else
+        throw("Unknown type for event object.")
+    end
+end
+
 function parse_to_events(f::AbstractString,format::AbstractString,Δ::Float64)
     format ∉ ["auv","abuv"] && throw("Only auv and abuv formats can be parsed to events.")
     D=Dict{object_type,Array{Float64,1}}()

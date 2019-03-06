@@ -16,7 +16,7 @@ import Base.∩
 import Base.⊆
 import Base.+
 import Base.-
-import Base: length, count, match, merge, merge!
+import Base: length, count, match, merge, merge!, string
 
 ########################################
 # Exports
@@ -48,6 +48,7 @@ export
 		next!, previous!, goto!, start!, end!, Event, object_type,
 
 		parse_line_auv, parse_line_abuv, parse_line, parse_to_events,
+		string,
 
 		# functions
 		count, length, merge, merge!, push, clean, from_match, to_match, 

@@ -16,9 +16,13 @@
 events=parse_to_events("./test_data/auv_test_1.txt","auv",0.05)
 @test length(events)==8
 @test events[1]==Event(-0.025,true,("a","b"))
+@test string(events[1])=="-0.025 + a b"
 @test events[2]==Event(0.025,false,("a","b"))
+@test string(events[2])=="0.025 - a b"
 @test events[3]==Event(0.475,true,("a","c"))
+@test string(events[3])=="0.475 + a c"
 @test events[4]==Event(0.525,false,("a","c"))
+@test string(events[4])=="0.525 - a c"
 @test events[5]==Event(0.575,true,("a","c"))
 @test events[6]==Event(0.625,false,("a","c"))
 @test events[7]==Event(0.975,true,("a","b"))
