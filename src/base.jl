@@ -5,14 +5,10 @@
 ≈(a::Tuple{Float64,Float64},b::Tuple{Float64,Float64};atol::Real=10^-6)=≈(a[1],b[1],atol=atol)&&≈(a[2],b[2],atol=atol)
 ≈(a::Array{Tuple{Float64,Float64}},b::Array{Tuple{Float64,Float64}};atol::Real=10^-6)=length(a)==length(b) ? all([x[1]≈x[2] for x in zip(a,b)]) : false
 
-# ----------- NODE DEFINITIONS -------------
-#
 mutable struct Node <: StreamObject
     name::AbstractString
     presence::Intervals
 end
-
-==(a::Node,b::Node)=(a.name==b.name)&(a.presence==b.presence)
 
 # ----------- LINK DEFINITIONS -------------
 #
@@ -211,14 +207,6 @@ DirectedLinkStream(name::AbstractString,T::Intervals) = DirectedLinkStream(name,
 
 StreamGraph(name::AbstractString) = StreamGraph(name, Intervals([]), Set(), Dict(), Dict())
 StreamGraph(name::AbstractString,T::Intervals) = StreamGraph(name, T, Set(), Dict(), Dict())
-
-### NODES ###
-nodes(ls::Union{LinkStream,DirectedLinkStream})=ls.V
-nodes(ls::Union{LinkStream,DirectedLinkStream},t::Float64)=ls.V
-nodes(ls::Union{LinkStream,DirectedLinkStream},t0::Float64,t1::Float64)=ls.V
-nodes(s::Union{StreamGraph,DirectedStreamGraph},t::Float64)=[n for (n,interv) in s.W if t ∈ interv]
-nodes(s::Union{StreamGraph,DirectedStreamGraph})=[b for (a,b) in s.W]
-nodes(s::Union{StreamGraph,DirectedStreamGraph},t0::Float64,t1::Float64)=t0<=t1 ? [n for (n,interv) in s.W if Intervals([(t0,t1)]) ⊆ interv] : []
 
 ### LINKS ###
 links(s::AbstractStream)=[l for (k,v) in s.E for (kk,l) in v]
@@ -889,36 +877,8 @@ end
 
 ## Node queries on the cursor ##
 number_of_nodes(tc::TimeCursor)=number_of_nodes(tc.S)
-nodes(tc::TimeCursor)=tc.S.nodes
-
-function nodes(tc::TimeCursor,t::Float64)
-    goto!(tc,t)
-    if haskey(tc.T,t)
-        s1=nodes(tc)
-        previous!(tc)
-        return s1 ∪ nodes(tc)
-    else
-        return nodes(tc)
-    end
-end
 
 number_of_nodes(tc::TimeCursor,t::Float64)=length(nodes(tc,t))
-
-function nodes(tc::TimeCursor,t0::Float64,t1::Float64)
-    N=Set{AbstractString}()
-    goto!(tc,t0)
-    haskey(tc.T,t0) && previous!(tc)
-    N=N ∪ nodes(tc)
-    while tc.S.t1 < t1
-        next!(tc)
-        N=N ∪ nodes(tc)
-    end
-    if haskey(tc.T,t1)
-        next!(tc)
-        N=N ∪ nodes(tc)
-    end
-    N
-end
 
 number_of_nodes(tc::TimeCursor,t0::Float64,t1::Float64)=length(nodes(tc,t0,t1))
 
