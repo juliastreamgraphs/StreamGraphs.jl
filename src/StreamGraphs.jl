@@ -74,5 +74,6 @@ include("intervals.jl")
 include("base.jl")
 include("nodes.jl")
 include("links.jl")
+include("density.jl")
 
 end
