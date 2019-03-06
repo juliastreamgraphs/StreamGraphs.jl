@@ -500,29 +500,6 @@ function dump(f::AbstractString,events::Vector{Event})
     end
 end
 
-# ----------- METRICS OF STREAMS -------------
-#
-### COVERAGE ###
-coverage(ls::Union{LinkStream,DirectedLinkStream})=1.0
-coverage(s::Union{StreamGraph,DirectedStreamGraph})=((length(s.V)!=0) & (duration(s)!=0)) ? sum([duration(n) for (k,n) in s.W])/(duration(s)*length(s.V)) : 0.0
-
-### COMPACTNESS ###
-compactness(ls::Union{LinkStream,DirectedLinkStream})=1.0
-function compactness(s::Union{StreamGraph,DirectedStreamGraph})
-    throw("Not Yet Implemented...")
-end
-
-### UNIFORMITY ###
-uniformity(ls::Union{LinkStream,DirectedLinkStream})=1.0
-function uniformity(s::Union{StreamGraph,DirectedStreamGraph})
-    if length(s.V)==0
-        return 0.0
-    end
-    nom=sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])
-    denom=sum([length(times(s,u) ∪ times(s,v)) for (u,v) in s.V ⊗ s.V])
-    denom != 0 ? nom/denom : 0.0
-end
-
 # ----------- STATE -------------
 #
 mutable struct State
