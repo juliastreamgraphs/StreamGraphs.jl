@@ -773,6 +773,14 @@ function parse_to_events(f::AbstractString,format::AbstractString,Δ::Float64)
     sort!(events, by = v -> v.t)
 end
 
+function dump(f::AbstractString,events::Vector{Event})
+    open(f,"w") do file
+        for event in events
+            write(file,"$(string(event))\n")
+        end
+    end
+end
+
 # ----------- METRICS OF STREAMS -------------
 #
 duration(s::AbstractStream)=length(s.T)

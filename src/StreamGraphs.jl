@@ -48,7 +48,7 @@ export
 		next!, previous!, goto!, start!, end!, Event, object_type,
 
 		parse_line_auv, parse_line_abuv, parse_line, parse_to_events,
-		string,
+		string, dump,
 
 		# functions
 		count, length, merge, merge!, push, clean, from_match, to_match, 
