@@ -1180,6 +1180,31 @@ function load!(tc::TimeCursor,events::Vector{Event})
     end
 end
 
+links(s::AbstractStream,tc::TimeCursor,t::Float64)=links(tc,t)
+
+function links(s::AbstractStream,tc::TimeCursor,t0::Float64,t1::Float64)
+    if t0>t1
+        return []
+    end
+    result=Link[]
+    t0t1=Intervals([(t0,t1)])
+    l=links(tc,t0,t1)
+    for ll in l
+        if haskey(s.E,ll[1]) && haskey(s.E[ll[1]],ll[2])
+            temp=s.E[ll[1]][ll[2]]
+        elseif haskey(s.E,ll[2]) && haskey(s.E[ll[2]],ll[1])
+            temp=s.E[ll[2]][ll[1]]
+        else
+            throw("Unknown link $ll")
+        end
+        inter=t0t1 ∩ temp.presence
+        if length(inter)>0
+            push!(result,Link(temp.name,inter,temp.from,temp.to,temp.weight))
+        end
+    end
+    result
+end
+
 # ----------- JUMPS -------------
 #
 struct Jump
