@@ -1,4 +1,6 @@
 
+__precompile__()
+
 """
 Module for studying stream graphs and link streams.
 """
@@ -17,6 +19,13 @@ import Base.⊆
 import Base.+
 import Base.-
 import Base: length, count, match, merge, merge!, string
+
+abstract type AbstractStream end
+abstract type AbstractDirectedStream <: AbstractStream end
+abstract type AbstractUndirectedStream <: AbstractStream end
+abstract type StreamObject end
+abstract type AbstractPath end
+abstract type Event end
 
 ########################################
 # Exports

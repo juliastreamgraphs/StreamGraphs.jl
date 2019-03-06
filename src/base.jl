@@ -1,8 +1,3 @@
-abstract type StreamObject end
-abstract type AbstractStream end
-abstract type AbstractDirectedStream <: AbstractStream end
-abstract type AbstractUndirectedStream <: AbstractStream end
-abstract type AbstractPath end
 
 # ----------- SETS -------------
 #
@@ -726,8 +721,6 @@ function load!(s::AbstractStream, f::AbstractString, format::AbstractString, Δ:
         end
     end
 end
-
-abstract type Event end
 
 struct NodeEvent <: Event
     t::Float64
