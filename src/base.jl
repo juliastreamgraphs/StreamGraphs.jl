@@ -28,8 +28,6 @@ end
 ∩(a::StreamObject,b::StreamObject)=a.presence ∩ b.presence
 ∪(a::StreamObject,b::StreamObject)=a.presence ∪ b.presence
 
-duration(o::StreamObject)=length(o.presence)
-
 # --- Operations on Nodes ---
 function merge(n1::Node,n2::Node)
     if n1.name!=n2.name
@@ -554,15 +552,6 @@ end
 
 # ----------- METRICS OF STREAMS -------------
 #
-duration(s::AbstractStream)=length(s.T)
-duration(W::Dict{AbstractString,Node})=sum([duration(v) for (k,v) in W])
-
-### NODE DURATION ###
-node_duration(ls::Union{LinkStream,DirectedLinkStream})=duration(ls)
-node_duration(s::Union{StreamGraph,DirectedStreamGraph})=length(s.V)>0 ? sum([duration(n) for (k,n) in s.W])/length(s.V) : 0
-
-### LINK DURATION ###
-link_duration(s::AbstractStream)=length(s.V)>1 ? 2*sum([duration(l) for (k,v) in s.E for (kk,l) in v])/(length(s.V)*(length(s.V)-1)) : 0
 
 ### CONTRIBUTION ###
 contribution(s::AbstractStream, o::StreamObject)=duration(s)!=0 ? duration(o) / duration(s) : 0.0
@@ -691,7 +680,7 @@ mutable struct State
     links::Set{Tuple{AbstractString,AbstractString}}
 end
 
-duration(s::State)=s.t1-s.t0
+
 number_of_nodes(s::State)=length(s.nodes)
 number_of_links(s::State)=length(s.links)
 
@@ -862,8 +851,6 @@ struct DurationJump
     δ::Float64
 end
 
-duration(j::DurationJump)=j.δ
-
 # ----------- PATHS -------------
 #
 mutable struct Path <: AbstractPath
@@ -882,7 +869,6 @@ start(p::AbstractPath)= length(p.jumps) > 0 ? p.jumps[1].t : 0
 finish(p::Path)=length(p.jumps) > 0 ? p.jumps[end].t : 0
 finish(p::DurationPath)=length(p.jumps) > 0 ? p.jumps[end].t + p.jumps[end].δ : 0
 length(p::AbstractPath)=length(p.jumps)
-duration(p::AbstractPath)=finish(p)-start(p)
 
 function is_valid(p::Path)
     if length(p)<=1
