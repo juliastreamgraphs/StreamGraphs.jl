@@ -70,6 +70,7 @@ export
 # Includes
 
 include("sets.jl")
+include("intervals.jl")
 include("base.jl")
 
 end
