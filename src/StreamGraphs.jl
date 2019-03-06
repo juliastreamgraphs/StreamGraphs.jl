@@ -76,5 +76,6 @@ include("nodes.jl")
 include("links.jl")
 include("durations.jl")
 include("density.jl")
+include("clustering.jl")
 
 end
