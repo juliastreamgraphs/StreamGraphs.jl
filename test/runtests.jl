@@ -46,6 +46,11 @@ end
     include("time_cursors.jl")
 end
 
+@testset "Parser Tests" begin
+    @info "Check Parsers"
+    include("parsers.jl")
+end
+
 @testset "Jump Tests" begin
     @info "Check Jumps"
     include("jumps.jl")

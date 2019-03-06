@@ -656,7 +656,7 @@ end
 
 function record!(s::AbstractStream, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
     if (t0,t1) ⊈ s
-        throw("Stream $s.name is defined over $s.T. Invalid link between t0=$t0 and t1=$t1.")
+        throw("Stream $(s.name) is defined over $(s.T). Invalid link between t0=$t0 and t1=$t1.")
     end
     new = Link("$from to $to", Intervals([(t0,t1)]), from, to, 1)
     add_link!(s,new)
@@ -664,7 +664,7 @@ end
 
 function record!(s::Union{StreamGraph,DirectedStreamGraph}, t0::Float64, t1::Float64, n::AbstractString)
     if (t0,t1) ⊈ s
-        throw("Stream $s.name is defined over $s.T. Invalid link between t0=$t0 and t1=$t1.")
+        throw("Stream $(s.name) is defined over $(s.T). Invalid link between t0=$t0 and t1=$t1.")
     end
     new = Node(n,Intervals([(t0,t1)]))
     add_node!(s,new)
@@ -725,6 +725,42 @@ function load!(s::AbstractStream, f::AbstractString, format::AbstractString, Δ:
             record!(s,t0,t1,u,v)
         end
     end
+end
+
+object_type=Union{AbstractString,Tuple{AbstractString,AbstractString}}
+struct Event
+    t::Float64
+    arrive::Bool
+    object::object_type
+end
+
+==(e1::Event,e2::Event)=(e1.t==e2.t)&(e1.arrive==e2.arrive)&(e1.object==e2.object)
+
+function parse_to_events(f::AbstractString,format::AbstractString,Δ::Float64)
+    format ∉ ["auv","abuv"] && throw("Only auv and abuv formats can be parsed to events.")
+    D=Dict{object_type,Array{Float64,1}}()
+    events=Event[]
+    open(f) do file
+        for line in eachline(file)
+            t0,t1,u,v = parse_line(line,format,Δ)
+            if haskey(D,(u,v))
+                if t0 > D[(u,v)][2]
+                    push!(events,Event(D[(u,v)][1],true,(u,v)))
+                    push!(events,Event(D[(u,v)][2],false,(u,v)))
+                    D[(u,v)]=[t0,t1]
+                else
+                    D[(u,v)][2]=t1
+                end
+            else
+                D[(u,v)]=[t0,t1]
+            end
+        end
+    end
+    for (obj,interv) in D
+        push!(events,Event(interv[1],true,obj))
+        push!(events,Event(interv[2],false,obj))
+    end
+    sort!(events, by = v -> v.t)
 end
 
 # ----------- METRICS OF STREAMS -------------
