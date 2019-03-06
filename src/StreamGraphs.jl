@@ -85,5 +85,6 @@ include("density.jl")
 include("clustering.jl")
 include("degree.jl")
 include("additions.jl")
+include("parsers.jl")
 
 end
