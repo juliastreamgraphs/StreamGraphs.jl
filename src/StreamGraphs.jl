@@ -38,6 +38,7 @@ export
 		times, nodes, links, links_from, links_to,
 		neighborhood, degree, average_node_degree,
 		average_time_degree, State, Transition, TimeCursor,
+		degrees, average_expected_degree, expected_degree,
 
 		# Paths
 		Jump, DurationJump, Path, DurationPath,

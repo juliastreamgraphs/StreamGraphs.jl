@@ -2,6 +2,10 @@ function degree(s::AbstractUndirectedStream,node::AbstractString)
 	duration(s)!=0 ? duration(neighborhood(s,node))/duration(s) : 0.0
 end
 
+function degree(s::AbstractUndirectedStream,node::AbstractString,tc::TimeCursor)
+	throw("Not Implemented")
+end
+
 function degree(s::AbstractUndirectedStream,node::AbstractString,t::Float64)
 	length(neighborhood(s,node,t))
 end
@@ -12,6 +16,19 @@ end
 
 function degree(s::AbstractUndirectedStream)
 	length(s.V) != 0 ? 1.0/length(s.V)*sum([degree(s,v) for v in s.V]) : 0.0
+end
+
+function degree(s::AbstractUndirectedStream,tc::TimeCursor)
+	((duration(s)==0) | (length(s.V)==0)) && 0.0
+	start!(tc)
+	δ=collect(values(degrees(tc.S)))
+	d::Float64=sum(δ)*duration(tc.S)
+	while tc.S.t1 < s.T.list[1][2]
+        next!(tc)
+        δ=collect(values(degrees(tc.S)))
+        d+=sum(δ)*duration(tc.S)
+    end
+    1.0/(duration(s)*length(s.V))*d
 end
 
 function average_node_degree(ls::LinkStream)
@@ -62,3 +79,38 @@ end
 degrees(tc::TimeCursor)=degrees(tc.S)
 
 average_degree(tc::TimeCursor)=average_degree(tc.S)
+
+function expected_degree(s::AbstractStream,node::AbstractString)
+	throw("Not Implemented")
+end
+
+function expected_degree(s::AbstractStream,node::AbstractString,tc::TimeCursor)
+	Tv=times(s,node)
+	length(Tv)==0 && 0.0
+	start!(tc)
+	δ=degrees(tc.S)
+	d::Float64=0
+	if haskey(δ,node)
+		d+=δ[node]*duration(tc.S)
+	end
+    while tc.S.t1 < s.T.list[1][2]
+        next!(tc)
+        δ=degrees(tc.S)
+        if haskey(δ,node)
+        	d+=δ[node]*duration(tc.S)
+        end
+    end
+    1.0/length(Tv)*d
+end
+
+function expected_degree(s::AbstractStream,node::AbstractString,t::Float64)
+	throw("Not Implemented")
+end
+
+function expected_degree(s::AbstractStream,node::AbstractString,t::Float64,tc::TimeCursor)
+	throw("Not Implemented")
+end
+
+function average_expected_degree(s::AbstractStream)
+	number_of_nodes(s)!=0 ? 2 * number_of_links(s) / number_of_nodes(s) : 0.0
+end
