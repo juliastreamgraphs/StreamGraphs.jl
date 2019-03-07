@@ -1,18 +1,38 @@
 function density(ls::Union{LinkStream,DirectedLinkStream})
-    if (length(ls.V)==0) | (length(ls.E)==0)
-        return 0.0
-    end
+    ((length(ls.V)==0) | (length(ls.E)==0)) && 0.0
     nom=2 * sum([duration(l) for (k,v) in ls.E for (kk,l) in v])
     denom=(length(ls.V)*(length(ls.V)-1)*duration(ls))
     denom != 0 ? nom/denom : 0.0
 end
 
-function density(s::Union{StreamGraph,DirectedStreamGraph})
-    if (length(s.V)==0) | (length(s.E)==0)
-        return 0.0
+function density(ls::Union{LinkStream,DirectedLinkStream})
+    ((length(ls.V)==0) | (length(ls.E)==0) | (duration(ls)==0)) && 0.0
+    start!(tc)
+    d::Float64=density(tc)*duration(tc.S)
+    while tc.S.t1 < s.T.list[1][2]
+        next!(tc)
+        d+=density(tc)*duration(tc.S)
     end
+    1.0/duration(ls)*d
+end
+
+function density(s::Union{StreamGraph,DirectedStreamGraph})
+    ((length(s.V)==0) | (length(s.E)==0)) && 0.0
     denom = sum([length(times(s,u) ∩ times(s,v)) for (u,v) in s.V ⊗ s.V])
     denom != 0 ? sum([duration(l) for (k,v) in s.E for (kk,l) in v]) / denom : 0
+end
+
+function density(s::Union{StreamGraph,DirectedStreamGraph},tc::TimeCursor)
+    ((length(s.V)==0) | (length(s.E)==0)) && 0.0
+    start!(tc)
+    nom::Float64=duration(tc.S)*number_of_links(tc)
+    denom::Float64=duration(tc.S)*length(nodes(tc) ⊗ nodes(tc))
+    while tc.S.t1 < s.T.list[1][2]
+        next!(tc)
+        nom+=duration(tc.S)*number_of_links(tc)
+        denom+=duration(tc.S)*length(nodes(tc) ⊗ nodes(tc))
+    end
+    denom != 0 ? nom / denom : 0
 end
 
 density(ls::Union{LinkStream,DirectedLinkStream}, t::Float64)=length(ls.V)>1 ? 2 * sum([duration(l) for l in links(ls,t)])/(length(ls.V)*(length(ls.V)-1)) : 0
