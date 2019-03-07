@@ -5,7 +5,7 @@ function density(ls::Union{LinkStream,DirectedLinkStream})
     denom != 0 ? nom/denom : 0.0
 end
 
-function density(ls::Union{LinkStream,DirectedLinkStream})
+function density(ls::Union{LinkStream,DirectedLinkStream},tc::TimeCursor)
     ((length(ls.V)==0) | (length(ls.E)==0) | (duration(ls)==0)) && 0.0
     start!(tc)
     d::Float64=density(tc)*duration(tc.S)
