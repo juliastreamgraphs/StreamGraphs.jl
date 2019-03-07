@@ -90,6 +90,11 @@ function parse_to_events(f::AbstractString,format::AbstractString,Δ::Float64)
     sort!(events, by = v -> v.t)
 end
 
+function load!(tc::TimeCursor, f::AbstractString, format::AbstractString, Δ::Float64)
+    events=parse_to_events(f,format,Δ)
+    load!(tc,events)
+end
+
 function dump(f::AbstractString,events::Vector{Event})
     open(f,"w") do file
         for event in events
