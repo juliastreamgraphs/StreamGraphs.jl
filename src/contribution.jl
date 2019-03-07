@@ -10,6 +10,10 @@ contribution(s::AbstractDirectedStream, from::AbstractString, to::AbstractString
 
 contribution(s::AbstractUndirectedStream, from::AbstractString, to::AbstractString)=from<=to ? contribution(s,s.E[from][to]) : contribution(s,s.E[to][from])
 
-node_contribution(s::AbstractStream,t::Float64)=length(nodes(s,t))/length(s.V)
+node_contribution(s::AbstractStream,t::Float64)=length(s.V) != 0 ? length(nodes(s,t))/length(s.V) : 0.0
 
-link_contribution(s::AbstractStream,t::Float64)=length(links(s,t))/length(s.V ⊗ s.V)
+node_contribution(s::AbstractStream,tc::TimeCursor,t::Float64)=length(s.V) != 0 ? length(nodes(tc,t))/length(s.V) : 0.0
+
+link_contribution(s::AbstractStream,t::Float64)=length(s.V) != 0 ? length(links(s,t))/length(s.V ⊗ s.V) : 0.0
+
+link_contribution(s::AbstractStream,tc::TimeCursor,t::Float64)=length(s.V) != 0 ? length(links(tc,t))/length(s.V ⊗ s.V) : 0.0
