@@ -1,5 +1,7 @@
 # StreamGraphs.jl
 
+[![Build Status](https://travis-ci.com/NicolasGensollen/StreamGraphs.jl.svg?branch=master)](https://travis-ci.com/NicolasGensollen/StreamGraphs.jl)
+
 This package implements `LinkStream` and `StreamGraph` objects which model interactions over time. 
 
 For more information, please refer to the following paper: [Stream Graphs and Link Streams for the Modeling of Interactions over Time](https://arxiv.org/pdf/1710.04073.pdf)
