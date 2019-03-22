@@ -38,12 +38,14 @@ export
 		times, nodes, links, links_from, links_to,
 		neighborhood, degree, average_node_degree,
 		average_time_degree, State, Transition, TimeCursor,
+		degrees, average_expected_degree, expected_degree,
 
 		# Paths
 		Jump, DurationJump, Path, DurationPath,
 
 		# Adding to streams
 		add_node!, add_link!, record!, load!, parse_line,
+		record_event!,
 
 		# Durations
 		duration, node_duration, link_duration, contribution,

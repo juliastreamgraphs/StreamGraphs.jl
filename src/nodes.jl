@@ -12,7 +12,19 @@ nodes(s::Union{StreamGraph,DirectedStreamGraph})=[b for (a,b) in s.W]
 
 nodes(s::Union{StreamGraph,DirectedStreamGraph},t0::Float64,t1::Float64)=t0<=t1 ? [n for (n,interv) in s.W if Intervals([(t0,t1)]) ⊆ interv] : []
 
-nodes(tc::TimeCursor)=tc.S.nodes
+function nodes(tc::TimeCursor)
+    length(tc.S.nodes) > 0 && return tc.S.nodes
+    res=Set{AbstractString}()
+    if length(tc.S.links) > 0
+        for l in tc.S.links
+            push!(res,l[1])
+            push!(res,l[2])
+        end
+        return res
+    else
+        return Set{AbstractString}()
+    end
+end
 
 function nodes(tc::TimeCursor,t::Float64)
     goto!(tc,t)
