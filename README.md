@@ -1,6 +1,8 @@
 # StreamGraphs.jl
 
 [![Build Status](https://travis-ci.com/NicolasGensollen/StreamGraphs.jl.svg?branch=master)](https://travis-ci.com/NicolasGensollen/StreamGraphs.jl)
+[![codecov](https://codecov.io/gh/NicolasGensollen/StreamGraphs.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/NicolasGensollen/StreamGraphs.jl)
+
 
 This package implements `LinkStream` and `StreamGraph` objects which model interactions over time. 
 
