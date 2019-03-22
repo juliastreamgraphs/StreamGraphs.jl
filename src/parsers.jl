@@ -63,6 +63,25 @@ function string(e::Event)
     end
 end
 
+function record_event!(events::Vector{Event},
+                       D::Dict{Tuple{AbstractString,AbstractString},Array{Float64,1}},
+                       t0::Float64,
+                       t1::Float64,
+                       u::AbstractString,
+                       v::AbstractString)
+    if haskey(D,(u,v))
+        if t0 > D[(u,v)][2]
+            push!(events,LinkEvent(D[(u,v)][1],true,(u,v)))
+            push!(events,LinkEvent(D[(u,v)][2],false,(u,v)))
+            D[(u,v)]=[t0,t1]
+        else
+            D[(u,v)][2]=t1
+        end
+    else
+        D[(u,v)]=[t0,t1]
+    end
+end
+
 function parse_to_events(f::AbstractString,format::AbstractString,Δ::Float64)
     format ∉ ["auv","abuv"] && throw("Only auv and abuv formats can be parsed to events.")
     D=Dict{Tuple{AbstractString,AbstractString},Array{Float64,1}}()
@@ -70,17 +89,7 @@ function parse_to_events(f::AbstractString,format::AbstractString,Δ::Float64)
     open(f) do file
         for line in eachline(file)
             t0,t1,u,v = parse_line(line,format,Δ)
-            if haskey(D,(u,v))
-                if t0 > D[(u,v)][2]
-                    push!(events,LinkEvent(D[(u,v)][1],true,(u,v)))
-                    push!(events,LinkEvent(D[(u,v)][2],false,(u,v)))
-                    D[(u,v)]=[t0,t1]
-                else
-                    D[(u,v)][2]=t1
-                end
-            else
-                D[(u,v)]=[t0,t1]
-            end
+            record_event!(events,D,t0,t1,u,v)
         end
     end
     for (obj,interv) in D

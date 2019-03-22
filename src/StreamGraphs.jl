@@ -45,6 +45,7 @@ export
 
 		# Adding to streams
 		add_node!, add_link!, record!, load!, parse_line,
+		record_event!,
 
 		# Durations
 		duration, node_duration, link_duration, contribution,
