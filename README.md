@@ -10,7 +10,7 @@ For more information, please refer to the following paper: [Stream Graphs and Li
 
 ## Documentation
 
-To be coming soon...
+Full documentation is available at [GitHub Pages](https://NicolasGensollen.github.io/StreamGraphs.jl/latest).
 
 ## Installation
 
