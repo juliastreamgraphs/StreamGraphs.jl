@@ -1,2 +1,38 @@
 # StreamGraphs.jl
-Stream graphs in Julia
+
+This package implements `LinkStream` and `StreamGraph` objects which model interactions over time. 
+
+For more information, please refer to the following paper: [Stream Graphs and Link Streams for the Modeling of Interactions over Time](https://arxiv.org/pdf/1710.04073.pdf)
+
+## Documentation
+
+To be coming soon...
+
+## Installation
+
+```julia
+julia> using Pkg
+julia> Pkg.clone("git://github.com/NicolasGensollen/StreamGraphs.jl")
+```
+
+## Usage
+
+Once installed, the `StreamGraphs` package can be used by typing
+
+```julia
+julia> using StreamGraphs
+```
+
+## Development
+
+Contributions to the development and enhancement of `StreamGraphs.jl` are welcome. Please see [CONTRIBUTING.md](https://github.com/NicolasGensollen/StreamGraphs.jl/blob/master/CONTRIBUTING.md) for code contribution guidelines.
+
+## License
+
+StreamGraphs  is released under a BSD [license](https://github.com/NicolasGensollen/StreamGraphs.jl/blob/master/LICENSE).
+
+## Contact
+
+If you are having issues using StreamGraphs, feel free to open an Issue [here](https://github.com/NicolasGensollen/StreamGraphs.jl/issues/new)
+
+For questions about collaboration please email [Nicolas Gensollen](mailto:nicolas.gensollen@gmail.com)
