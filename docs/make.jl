@@ -19,5 +19,4 @@ deploydocs(
            repo   = "github.com/NicolasGensollen/StreamGraphs.jl.git",
            branch = "gh-pages",
            target = "build",
-           osname = "linux"
            )

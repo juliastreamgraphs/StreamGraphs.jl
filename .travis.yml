@@ -18,13 +18,5 @@ script:
         
 after_success:
     - julia -e 'using Pkg; cd(Pkg.dir("StreamGraphs")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+    - julia -e 'using Pkg; cd(Pkg.dir("StreamGraphs")); Pkg.add("Documenter"); ENV["DOCUMENTER_DEBUG"] = "true"; include(joinpath("docs", "make.jl"))'
 
-jobs:
-    include:
-        - stage: "Documentation"
-          julia: 1.0
-          os: linux
-          script:
-            - julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.build("StreamGraphs"); Pkg.instantiate()'
-            - julia --project=docs/ docs/make.jl
-          after_success: skip
