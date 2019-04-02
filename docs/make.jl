@@ -1,10 +1,11 @@
+push!(LOAD_PATH,"../src/")
 using Documenter
 using StreamGraphs
 
 makedocs(
          modules  = [StreamGraphs],
          format   = :html,
-         sitename = "StreamGraphs",
+         sitename = "StreamGraphs.jl",
          doctest  = false,
          pages    = Any[
                         "Getting Started" => "index.md",
@@ -16,7 +17,7 @@ deploydocs(
            deps   = nothing,
            make   = nothing,
            repo   = "github.com/NicolasGensollen/StreamGraphs.jl.git",
+           branch = "gh-pages",
            target = "build",
-           julia  = "1.0",
            osname = "linux"
            )
