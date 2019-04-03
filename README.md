@@ -1,6 +1,7 @@
 # StreamGraphs.jl
 
 [![Build Status](https://travis-ci.com/NicolasGensollen/StreamGraphs.jl.svg?branch=master)](https://travis-ci.com/NicolasGensollen/StreamGraphs.jl)
+[![Build status](https://ci.appveyor.com/api/projects/status/96iqo76vjlrvnu90/branch/master?svg=true)](https://ci.appveyor.com/project/NicolasGensollen/streamgraphs-jl/branch/master)
 [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://nicolasgensollen.github.io/StreamGraphs.jl/dev/)
 [![codecov](https://codecov.io/gh/NicolasGensollen/StreamGraphs.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/NicolasGensollen/StreamGraphs.jl)
 
