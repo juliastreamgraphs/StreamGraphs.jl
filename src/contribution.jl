@@ -19,58 +19,60 @@ Note: If the stream has no duration, this function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function contribution(s::AbstractStream, o::StreamObject)
-	duration(s)!=0 ? duration(o) / duration(s) : 0.0
+	duration(s) != 0 ? duration(o) / duration(s) : 0.0
 end
 
 """
-	contribution(ls,"node_name")
+	contribution(ls,n)
 
 Return the contribution of the given node in the link stream.
-By definition, this is always 1 since nodes have no dynamics in
-link streams. 
+By definition, this is always 1 since nodes have no dynamics in link streams. 
 """
-contribution(ls::Union{LinkStream,DirectedLinkStream},node_name::AbstractString)=1.0
+function contribution(ls::Union{LinkStream,DirectedLinkStream}, n::String)
+	return 1.0
+end
 
 """
-	contribution(s,"node_name")
+	contribution(s,n)
 
 Return the contribution of the given node in the stream graph. 
 """
-function contribution(s::Union{StreamGraph,DirectedStreamGraph},node_name::AbstractString)
-	contribution(s,s.W[node_name])
+function contribution(s::Union{StreamGraph,DirectedStreamGraph}, n::String)
+	contribution(s,s.W[n])
 end
 
 """
-	contribution(ls,"node_name",t)
+	contribution(ls,n,t)
 
 Return the contribution of the given node at the given time in the link stream.
-By definition, this is always 1 since nodes have no dynamics in
-link streams.
+By definition, this is always 1 since nodes have no dynamics in link streams.
 """
-contribution(ls::Union{LinkStream,DirectedLinkStream},node_name::AbstractString,t::Float64)=1.0
+function contribution(ls::Union{LinkStream,DirectedLinkStream}, n::String, t::Real)
+	return 1.0
+end
 
 """
-	contribution(s,"from","to")
+	contribution(s,from,to)
 
 Return the contribution of the directed link in the directed stream.
 """
-function contribution(s::AbstractDirectedStream, from::AbstractString, to::AbstractString)
-	((haskey(s.E,from))&&(haskey(s.E[from],to))) ? contribution(s,s.E[from][to]) : 0
+function contribution(s::AbstractDirectedStream, from::String, to::String)
+	((haskey(s.E,from)) && (haskey(s.E[from],to))) ? contribution(s,s.E[from][to]) : 0
 end
 
 """
-	contribution(s,"from","to")
+	contribution(s,from,to)
 
 Return the contribution of the undirected link in the undirected stream.
-This means that contribution(s,"from","to")==contribution(s,"to","from")
+This means that contribution(s,from,to)==contribution(s,to,from)
 """
-function contribution(s::AbstractUndirectedStream, from::AbstractString, to::AbstractString)
+function contribution(s::AbstractUndirectedStream, from::String, to::String)
 	if haskey(s.E,from) && haskey(s.E[from],to)
 		contribution(s,s.E[from][to])
 	elseif haskey(s.E,to) && haskey(s.E[to],from)
 		contribution(s,s.E[to][from])
 	else
-		throw("Unknown link ($from,$to).")
+		throw("Unknown link ($(from),$(to)).")
 	end
 end
 
@@ -90,8 +92,8 @@ Note: If the stream has no node, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function node_contribution(s::AbstractStream,t::Float64)
-	length(s.V) != 0 ? length(nodes(s,t))/length(s.V) : 0.0
+function node_contribution(s::AbstractStream, t::Real)
+	length(s.V) != 0 ? length(nodes(s,t)) / length(s.V) : 0.0
 end
 
 """
@@ -100,8 +102,8 @@ end
 Return the node contribution of the given time instant in the stream 
 using a time cursor.
 """
-function node_contribution(s::AbstractStream,tc::TimeCursor,t::Float64)
-	length(s.V) != 0 ? length(nodes(tc,t))/length(s.V) : 0.0
+function node_contribution(s::AbstractStream, tc::TimeCursor, t::Real)
+	length(s.V) != 0 ? length(nodes(tc,t)) / length(s.V) : 0.0
 end
 
 """
@@ -120,16 +122,15 @@ Note: If the stream has no node, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function link_contribution(s::AbstractStream,t::Float64)
-	length(s.V) != 0 ? length(links(s,t))/length(s.V ⊗ s.V) : 0.0
+function link_contribution(s::AbstractStream, t::Real)
+	length(s.V) != 0 ? length(links(s,t)) / length(s.V ⊗ s.V) : 0.0
 end
 
 """
 	link_contribution(s,tc,t)
 
-Return the link contribution of the given time instant in the stream 
-using a time cursor.
+Return the link contribution of the given time instant in the stream using a time cursor.
 """
-function link_contribution(s::AbstractStream,tc::TimeCursor,t::Float64)
-	length(s.V) != 0 ? length(links(tc,t))/length(s.V ⊗ s.V) : 0.0
+function link_contribution(s::AbstractStream, tc::TimeCursor, t::Real)
+	length(s.V) != 0 ? length(links(tc,t)) / length(s.V ⊗ s.V) : 0.0
 end

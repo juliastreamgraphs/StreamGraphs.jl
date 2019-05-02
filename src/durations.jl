@@ -1,24 +1,27 @@
 """
 	duration(o)
 
-Return the sum of the lengthes of the presence 
-intervals of the given object.
+Return the cardinal of the presence intervals of the given object.
 """
-duration(o::StreamObject)=length(o.presence)
+function duration(o::StreamObject)
+	return cardinal(o.presence)
+end
 
 """
 	duration(s)
 
-Return the duration of the stream, that is tend - tstart.
+Return the duration of the stream.
 """
-duration(s::AbstractStream)=length(s.T)
+function duration(s::AbstractStream)
+	return cardinal(s.T)
+end
 
 """
 	duration(W)
 
 Return the sum of the nodes' durations in W.
 """
-function duration(W::Dict{AbstractString,Node})
+function duration(W::Dict{String,Node})
 	length(W) != 0 ? sum([duration(v) for (k,v) in W]) : 0.0
 end
 
@@ -28,7 +31,9 @@ end
 Return the node duration in the given Link Stream.
 By definition, this is just the duration of the link stream itself.
 """
-node_duration(ls::Union{LinkStream,DirectedLinkStream})=duration(ls)
+function node_duration(ls::Union{LinkStream,DirectedLinkStream})
+	return duration(ls)
+end
 
 """
 	node_duration(s)
@@ -47,7 +52,7 @@ Note: If the stream has no node, this function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function node_duration(s::Union{StreamGraph,DirectedStreamGraph})
-	length(s.V)>0 ? duration(s.W)/length(s.V) : 0
+	length(s.V) > 0 ? duration(s.W) / length(s.V) : 0
 end
 
 """
@@ -71,16 +76,16 @@ Note: If the stream has no node, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function node_duration(s::Union{StreamGraph,DirectedStreamGraph},tc::TimeCursor)
-	k::Float64=0.0
-	length(s.V)==0 && return 0.0
+function node_duration(s::Union{StreamGraph,DirectedStreamGraph}, tc::TimeCursor)
+	k::Real = 0
+	length(s.V) == 0 && return 0.0
 	start!(tc)
-	k+=duration(tc.S)*number_of_nodes(tc)
+	k += duration(tc.S) * number_of_nodes(tc)
 	while tc.S.t1 < s.T.list[1][2]
 		next!(tc)
-		k+=duration(tc.S)*number_of_nodes(tc)
+		k += duration(tc.S) * number_of_nodes(tc)
 	end
-	k/length(s.V)
+	k / length(s.V)
 end
 
 """
@@ -100,7 +105,7 @@ Note: If the stream has no node, this function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function link_duration(s::AbstractStream)
-	length(s.V)>1 ? 2*sum([duration(l) for (k,v) in s.E for (kk,l) in v])/(length(s.V)*(length(s.V)-1)) : 0
+	length(s.V) > 1 ? 2 * sum([duration(l) for (k,v) in s.E for (kk,l) in v]) / (length(s.V) * (length(s.V) - 1)) : 0
 end
 
 """
@@ -124,16 +129,16 @@ Note: If the stream has no node, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function link_duration(s::AbstractStream,tc::TimeCursor)
-	k::Float64=0.0
-	length(s.V)<=1 && return 0.0
+function link_duration(s::AbstractStream, tc::TimeCursor)
+	k::Real = 0
+	length(s.V) <= 1 && return 0.0
 	start!(tc)
-	k+=duration(tc.S)*number_of_links(tc)
+	k += duration(tc.S) * number_of_links(tc)
 	while tc.S.t1 < s.T.list[1][2]
 		next!(tc)
-		k+=duration(tc.S)*number_of_links(tc)
+		k += duration(tc.S) * number_of_links(tc)
 	end
-	k/(length(s.V)*(length(s.V)-1))
+	k / (length(s.V) * (length(s.V) - 1))
 end
 
 """
@@ -141,18 +146,24 @@ end
 
 Return the duration of a given state.
 """
-duration(s::State)=s.t1-s.t0
+function duration(s::State)
+	s.t1 - s.t0
+end
 
 """
 	duration(j)
 
 Return the duration of a given DurationJump.
 """
-duration(j::DurationJump)=j.δ
+function duration(j::DurationJump)
+	j.δ
+end
 
 """
 	duration(p)
 
 Return the duration of a given Path.
 """
-duration(p::AbstractPath)=finish(p)-start(p)
+function duration(p::AbstractPath)
+	finish(p) - start(p)
+end

@@ -10,6 +10,8 @@ module StreamGraphs
 #######################################
 # Imports
 
+using IntervalUnions
+
 import Base.≈
 import Base.==
 import Base.∈

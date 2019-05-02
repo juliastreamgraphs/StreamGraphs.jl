@@ -2,17 +2,14 @@
 	degree(s,node)
 
 Return the degree of the given node in the givn stream.
-
 ```math
 d \\left(v \\right)= \\left| \\mathcal{N} \\left(v\\right) \\right|
 ```
-
 Where 
 
 ```math
 \\mathcal{N} \\left(v\\right)=\\left\\{ \\left(t,u\\right),\\ \\left(t,uv \\right) \\in E}
 ```
-
 is the neighborhood of node v.
 Note: If the stream has a duration of 0, this function returns 0.
 
@@ -22,8 +19,8 @@ Note: If the stream has a duration of 0, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function degree(s::AbstractUndirectedStream,node::AbstractString)
-	duration(s)!=0 ? duration(neighborhood(s,node))/duration(s) : 0.0
+function degree(s::AbstractUndirectedStream, node::String)
+	duration(s) != 0 ? duration(neighborhood(s,node)) / duration(s) : 0.0
 end
 
 """
@@ -32,7 +29,7 @@ end
 Return the degree of the given node in the given stream using a TimeCursor.
 Note: Not implemented yet...
 """
-function degree(s::AbstractUndirectedStream,node::AbstractString,tc::TimeCursor)
+function degree(s::AbstractUndirectedStream, node::String, tc::TimeCursor)
 	throw("Not Implemented")
 end
 
@@ -43,13 +40,11 @@ Return the instantaneous degree of the given node at the given time in the given
 ```math
 d_t \\left(v \\right)= \\left| \\mathcal{N}_t \\left(v\\right) \\right|
 ```
-
 Where 
 
 ```math
 \\mathcal{N}_t\\left(v\\right)=\\left\\{ u,\\ \\left(t,uv \\right) \\in E}
 ```
-
 is the instantaneous neighborhood of node v.
 
 ### Reference
@@ -58,7 +53,7 @@ is the instantaneous neighborhood of node v.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function degree(s::AbstractUndirectedStream,node::AbstractString,t::Float64)
+function degree(s::AbstractUndirectedStream, node::String, t::Real)
 	length(neighborhood(s,node,t))
 end
 
@@ -77,8 +72,8 @@ Note: If the stream has no node, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function degree(s::AbstractUndirectedStream,t::Float64)
-	length(s.V) != 0 ? 1.0/length(s.V)*sum([degree(s,v,t) for v in s.V]) : 0.0
+function degree(s::AbstractUndirectedStream, t::Real)
+	length(s.V) != 0 ? 1.0 / length(s.V) * sum([degree(s,v,t) for v in s.V]) : 0.0
 end
 
 """
@@ -97,7 +92,7 @@ Note: If the stream has no node, this function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function degree(s::AbstractUndirectedStream)
-	length(s.V) != 0 ? 1.0/length(s.V)*sum([degree(s,v) for v in s.V]) : 0.0
+	length(s.V) != 0 ? 1.0 / length(s.V) * sum([degree(s,v) for v in s.V]) : 0.0
 end
 
 """
@@ -116,17 +111,17 @@ Note: If the stream has no node or a duration of 0, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function degree(s::AbstractUndirectedStream,tc::TimeCursor)
+function degree(s::AbstractUndirectedStream, tc::TimeCursor)
 	((duration(s)==0) | (length(s.V)==0)) && 0.0
 	start!(tc)
-	δ=collect(values(degrees(tc.S)))
-	d::Float64=sum(δ)*duration(tc.S)
+	δ = collect(values(degrees(tc.S)))
+	d::Float64 = sum(δ) * duration(tc.S)
 	while tc.S.t1 < s.T.list[1][2]
         next!(tc)
-        δ=collect(values(degrees(tc.S)))
-        d+=sum(δ)*duration(tc.S)
+        δ = collect(values(degrees(tc.S)))
+        d += sum(δ) * duration(tc.S)
     end
-    1.0/(duration(s)*length(s.V))*d
+    1.0 / (duration(s) * length(s.V)) * d
 end
 
 """
@@ -145,7 +140,7 @@ Note: If card(W)=0, this function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function average_node_degree(s::StreamGraph)
-	duration(s.W)!=0 ? 1.0/duration(s.W)*sum([length(times(s,v))*degree(s,v) for v in s.V]) : 0.0
+	duration(s.W)!=0 ? 1.0 / duration(s.W) * sum([length(times(s,v)) * degree(s,v) for v in s.V]) : 0.0
 end
 
 """
@@ -165,7 +160,7 @@ Note: If the link stream has no node, this function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function average_node_degree(ls::LinkStream)
-	number_of_nodes(ls)!=0 ? 2.0*number_of_links(ls)/number_of_nodes(ls) : 0.0
+	number_of_nodes(ls) != 0 ? 2.0 * number_of_links(ls) / number_of_nodes(ls) : 0.0
 end
 
 """
@@ -188,7 +183,7 @@ Warning: This function is very inefficient, use `average_time_degree(s,tc)` if p
 function average_time_degree(s::AbstractStream)
     k = node_duration(s)
     τ = times(s)
-    k != 0 ? 1.0/k*sum([node_contribution(s,0.5*(t[2]+t[1]))*degree(s,0.5*(t[2]+t[1]))*(t[2]-t[1]) for t in zip(τ[1:end-1],τ[2:end])]) : 0.0
+    k != 0 ? 1.0 / k * sum([node_contribution(s,0.5 * (t[2] + t[1])) * degree(s,0.5 * (t[2] + t[1])) * (t[2] - t[1]) for t in zip(τ[1:end-1],τ[2:end])]) : 0.0
 end
 
 """
@@ -196,19 +191,19 @@ end
 
 Return the average time degree of the given stream using a TimeCursor.
 """
-function average_time_degree(s::AbstractStream,tc::TimeCursor)
-	length(s.V)==0 && 0.0
-	dW=duration(s.W)
-	dW==0 && 0.0
+function average_time_degree(s::AbstractStream, tc::TimeCursor)
+	length(s.V) == 0 && 0.0
+	dW = duration(s.W)
+	dW == 0 && 0.0
 	start!(tc)
-	δ=collect(values(degrees(tc.S)))
-	d::Float64=sum(δ)/length(s.V)*number_of_nodes(tc)*duration(tc.S)
+	δ = collect(values(degrees(tc.S)))
+	d::Float64 = sum(δ) / length(s.V) * number_of_nodes(tc) * duration(tc.S)
     while tc.S.t1 < s.T.list[1][2]
         next!(tc)
-        δ=collect(values(degrees(tc.S)))
-        d+=sum(δ)/length(s.V)*number_of_nodes(tc)*duration(tc.S)
+        δ = collect(values(degrees(tc.S)))
+        d += sum(δ) / length(s.V) * number_of_nodes(tc) * duration(tc.S)
     end
-    1.0/dW*d
+    1.0 / dW * d
 end
 
 """
@@ -217,12 +212,12 @@ end
 Return the degree distribution of the graph corresponding to the given state.
 """
 function degrees(S::State)
-	l=String[]
+	l = String[]
 	for ll in S.links
     	push!(l,ll[1])
     	push!(l,ll[2])
 	end
-	ul=unique(l)
+	ul = unique(l)
 	Dict([(i,count(x->x==i,l)) for i in ul])
 end
 
@@ -232,9 +227,9 @@ end
 Return the average degree of the graph corresponding to the given state.
 """
 function average_degree(S::State)
-	d=collect(values(degrees(S)))
-	length(d)==0 && 0.0
-	sum(d)/length(d)
+	d = collect(values(degrees(S)))
+	length(d) == 0 && 0.0
+	sum(d) / length(d)
 end
 
 """
@@ -242,14 +237,18 @@ end
 
 Return the degree distribution of the cursor's current state.
 """
-degrees(tc::TimeCursor)=degrees(tc.S)
+function degrees(tc::TimeCursor)
+	return degrees(tc.S)
+end
 
 """
 	average_degree(tc)
 
 Return the average degree of the cursor's current state.
 """
-average_degree(tc::TimeCursor)=average_degree(tc.S)
+function average_degree(tc::TimeCursor)
+	return average_degree(tc.S)
+end
 
 """
 	expected_degree(s,node)
@@ -257,7 +256,7 @@ average_degree(tc::TimeCursor)=average_degree(tc.S)
 Return the expected degree of the given node in the given stream.
 Note: Not implemented yet...
 """
-function expected_degree(s::AbstractStream,node::AbstractString)
+function expected_degree(s::AbstractStream, node::String)
 	throw("Not Implemented")
 end
 
@@ -275,23 +274,23 @@ Return the expected degree of the given node in the given stream using a TimeCur
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function expected_degree(s::AbstractStream,node::AbstractString,tc::TimeCursor)
-	Tv=times(s,node)
-	length(Tv)==0 && 0.0
+function expected_degree(s::AbstractStream, node::String, tc::TimeCursor)
+	Tv = times(s,node)
+	length(Tv) == 0 && 0.0
 	start!(tc)
-	δ=degrees(tc.S)
-	d::Float64=0
+	δ = degrees(tc.S)
+	d::Real = 0
 	if haskey(δ,node)
-		d+=δ[node]*duration(tc.S)
+		d += δ[node] * duration(tc.S)
 	end
     while tc.S.t1 < s.T.list[1][2]
         next!(tc)
-        δ=degrees(tc.S)
+        δ = degrees(tc.S)
         if haskey(δ,node)
-        	d+=δ[node]*duration(tc.S)
+        	d += δ[node] * duration(tc.S)
         end
     end
-    1.0/length(Tv)*d
+    1.0 / length(Tv) * d
 end
 
 """
@@ -300,7 +299,7 @@ end
 Return the expected degree of the given node at the given time in the given stream.
 Note: Not implemented yet...
 """
-function expected_degree(s::AbstractStream,node::AbstractString,t::Float64)
+function expected_degree(s::AbstractStream, node::String, t::Real)
 	throw("Not Implemented")
 end
 
@@ -311,7 +310,7 @@ Return the expected degree of the given node at the given time in the given
 stream using a TimeCursor.
 Note: Not implemented yet...
 """
-function expected_degree(s::AbstractStream,node::AbstractString,t::Float64,tc::TimeCursor)
+function expected_degree(s::AbstractStream, node::String, t::Real, tc::TimeCursor)
 	throw("Not Implemented")
 end
 
@@ -331,5 +330,5 @@ Note: If the stream has no node, this function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function average_expected_degree(s::AbstractStream)
-	number_of_nodes(s)!=0 ? 2 * number_of_links(s) / number_of_nodes(s) : 0.0
+	number_of_nodes(s) != 0 ? 2 * number_of_links(s) / number_of_nodes(s) : 0.0
 end

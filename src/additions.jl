@@ -1,7 +1,27 @@
-function add_node!(ls::Union{LinkStream,DirectedLinkStream}, n::AbstractString)
+
+"""
+    add_node!(ls,n)
+
+Add node n to the LinkStream ls.
+Arguments:
+    - ls::LinkStream : LinkStream.
+    - n::String : Name of the node to be added.
+"""
+function add_node!(ls::Union{LinkStream,DirectedLinkStream}, n::String)
+    if n in ls.V
+        println("Warning: Node $(n) already in LinkStream $(ls.name).")
+    end
     push!(ls.V,n)
 end
 
+"""
+    add_node(s,n)
+
+Add node n to the StreamGraph s.
+Arguments:
+    - s::StreamGraph : StreamGraph.
+    - n::Node : Node to be added.
+"""
 function add_node!(s::Union{StreamGraph,DirectedStreamGraph}, n::Node)
     if n.name ∉ s
         push!(s.V,n.name)
@@ -11,6 +31,14 @@ function add_node!(s::Union{StreamGraph,DirectedStreamGraph}, n::Node)
     end
 end
 
+"""
+    add_link!(ls,l)
+
+Add link l to the directed LinkStream ls.
+Arguments:
+    - ls::DirectedLinkStream : LinkStream.
+    - l::Link : Link to be added.
+"""
 function add_link!(ls::DirectedLinkStream, l::Link)
     if l.from ∉ ls
         add_node!(ls,l.from)
@@ -28,6 +56,14 @@ function add_link!(ls::DirectedLinkStream, l::Link)
     end
 end
 
+"""
+    add_link!(ls,l)
+
+Add link l to the LinkStream ls.
+Arguments:
+    - ls::LinkStream : LinkStream.
+    - l::Link : Link to be added.
+"""
 function add_link!(ls::LinkStream, l::Link)
     if l.from ∉ ls
         add_node!(ls,l.from)
@@ -48,6 +84,14 @@ function add_link!(ls::LinkStream, l::Link)
     end
 end
 
+"""
+    add_link!(s,l)
+
+Add link l to the directed StreamGraph s.
+Arguments:
+    - s::DirectedStreamGraph : StreamGraph.
+    - l::Link : Link to be added.
+"""
 function add_link!(s::DirectedStreamGraph, l::Link)
     if l.from ∉ s
         new_from = Node(l.from, l.presence)
@@ -73,6 +117,14 @@ function add_link!(s::DirectedStreamGraph, l::Link)
     end
 end
 
+"""
+    add_link!(s,l)
+
+Add link l to the StreamGraph s.
+Arguments:
+    - s::StreamGraph : StreamGraph.
+    - l::Link : Link to be added.
+"""
 function add_link!(s::StreamGraph, l::Link)
     if l.from ∉ s
         new_from = Node(l.from, l.presence)
@@ -101,18 +153,39 @@ function add_link!(s::StreamGraph, l::Link)
     end
 end
 
-function record!(s::AbstractStream, t0::Float64, t1::Float64, from::AbstractString, to::AbstractString)
+"""
+    record!(s,t0,t1,from,to)
+
+Record a new link in stream s between node from and to between t0 and t1.
+Arguments:
+    - s::AbstractStream : Stream entity.
+    - t0::Real : Starting time of the new link.
+    - t1::Real : Ending time of the new link.
+    - from::String : Name of the from node.
+    - to::String : Name of the to node.
+"""
+function record!(s::AbstractStream, t0::Real, t1::Real, from::String, to::String)
     if (t0,t1) ⊈ s
-        throw("Stream $(s.name) is defined over $(s.T). Invalid link between t0=$t0 and t1=$t1.")
+        throw("Stream $(s.name) is defined over $(string(s.T)). Invalid link between t0=$(t0) and t1=$(t1).")
     end
-    new = Link("$from to $to", Intervals([(t0,t1)]), from, to, 1)
+    new = Link("$from to $to", t0, t1, from, to)
     add_link!(s,new)
 end
 
-function record!(s::Union{StreamGraph,DirectedStreamGraph}, t0::Float64, t1::Float64, n::AbstractString)
+"""
+    record!(s,t0,t1,n)
+
+Record a new node's presence in stream s between t0 and t1.
+Arguments:
+    - s::Union{StreamGraph,DirectedStreamGraph} : StreamGraph.
+    - t0::Real : Arrival time of the node.
+    - t1::Real : Departure time of the node.
+    - n::String : Name of the node.
+"""
+function record!(s::Union{StreamGraph,DirectedStreamGraph}, t0::Real, t1::Real, n::String)
     if (t0,t1) ⊈ s
-        throw("Stream $(s.name) is defined over $(s.T). Invalid link between t0=$t0 and t1=$t1.")
+        throw("Stream $(s.name) is defined over $(string(s.T)). Invalid link between t0=$(t0) and t1=$(t1).")
     end
-    new = Node(n,Intervals([(t0,t1)]))
+    new = Node(n,t0,t1)
     add_node!(s,new)
 end

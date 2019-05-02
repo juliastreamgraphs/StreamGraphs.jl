@@ -14,16 +14,16 @@ time in the stream, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function node_clustering(s::AbstractUndirectedStream, v::AbstractString)
-    nomin=0
-    denom=0
-    N=Set(AbstractString[])
+function node_clustering(s::AbstractUndirectedStream, v::String)
+    nomin::Real = 0
+    denom::Real = 0
+    N = Set{String}()
     for n in keys(neighborhood(s,v))
         push!(N,n)
     end
     for (u,w) in N ⊗ N
-        nomin+=length((times(s,v,u) ∩ times(s,v,w)) ∩ times(s,u,w))
-        denom+=length(times(s,v,u) ∩ times(s,v,w))
+        nomin += cardinal((times(s,v,u) ∩ times(s,v,w)) ∩ times(s,u,w))
+        denom += cardinal(times(s,v,u) ∩ times(s,v,w))
     end
     denom != 0 ? nomin/denom : 0.0
 end
@@ -45,13 +45,15 @@ time t, this function returns 0.
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function node_clustering(s::AbstractUndirectedStream,v::AbstractString,t::Float64)
-    Nt=Set(AbstractString[])
+function node_clustering(s::AbstractUndirectedStream, v::String, t::Real)
+    Nt = Set{String}())
+    nom::Real = 0
+    denom::Real = 0
     for n in neighborhood(s,v,t)
         push!(Nt,n)
     end
-    nom=sum([1.0 for (u,w) in Nt ⊗ Nt if ((t ∈ times(s,v,u)) & (t ∈ times(s,v,w)) & (t ∈ times(s,u,w)))])
-    denom=sum([1.0 for (u,w) in Nt ⊗ Nt if ((t ∈ times(s,v,u)) & (t ∈ times(s,v,w)))])
+    nom = sum([1.0 for (u,w) in Nt ⊗ Nt if ((t ∈ times(s,v,u)) && (t ∈ times(s,v,w)) && (t ∈ times(s,u,w)))])
+    denom = sum([1.0 for (u,w) in Nt ⊗ Nt if ((t ∈ times(s,v,u)) && (t ∈ times(s,v,w)))])
     denom != 0 ? nom/denom : 0.0
 end
 
@@ -72,8 +74,8 @@ Note: If there is no node in the stream, this function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function node_clustering(s::AbstractUndirectedStream)
-    if length(s.V)>0
-        1.0/length(s.V)*sum([contribution(s,v)*node_clustering(s,v) for v in s.V])
+    if length(s.V) > 0
+        1.0 / length(s.V) * sum([contribution(s,v) * node_clustering(s,v) for v in s.V])
     else
         0.0
     end
@@ -93,18 +95,18 @@ cc \\left( t \\right)= \\frac{\\sum_{v}cc_t\\left(v \\right) \\sum_{uw} vu_t vw_
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-function time_clustering(s::AbstractUndirectedStream,t::Float64)
-    nom::Float64=0.0
-    denom::Float64=0.0
+function time_clustering(s::AbstractUndirectedStream, t::Real)
+    nom::Real = 0
+    denom::Real = 0
     for v in s.V
-        acc::Float64=0.0
+        acc::Real = 0
         for (u,w) in s.V ⊗ s.V
             if ((t ∈ times(s,v,u)) & (t ∈ times(s,v,w)))
-                acc+=1.0
+                acc += 1
             end
         end
-        nom+=node_clustering(s,v,t) * acc
-        denom+=acc
+        nom += node_clustering(s,v,t) * acc
+        denom += acc
     end
     denom != 0 ? nom/denom : 0.0
 end
@@ -127,7 +129,12 @@ Note: If nodes are never present in the stream, this function returns 0.
 function time_clustering(s::AbstractUndirectedStream)
     τ = times(s)
     dW = duration(s.W)
-    dW != 0 ? 1.0/dW*sum([time_clustering(s,0.5*(t[2]+t[1])) * length(nodes(s,0.5*(t[2]+t[1]))) for t in zip(τ[1:end-1],τ[2:end])]) : 0.0
+    if dW != 0
+      return (1.0 / dW * sum([time_clustering(s,0.5*(t[2]+t[1])) * 
+        length(nodes(s, 0.5 * (t[2] + t[1]))) for t in zip(τ[1:end-1], τ[2:end])]))
+    else
+      return 0.0
+    end
 end
 
 """
@@ -135,7 +142,7 @@ end
 
 Return the time clustering coefficient of the given stream using a TimeCursor.
 """
-function time_clustering(s::AbstractUndirectedStream,tc::TimeCursor)
+function time_clustering(s::AbstractUndirectedStream, tc::TimeCursor)
     throw("Not Implemented")
 end
 
@@ -154,17 +161,15 @@ cc \\left( S \\right) = \\int_t \\frac{1}{\\left|T \\right|} \\sum_{v} \\frac{cc
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function clustering(s::AbstractUndirectedStream)
-    card_TV = duration(s)*length(s.V)
-    if card_TV==0
-        return 0.0
-    end
-    τ = times(s)
     acc::Float64 = 0.0
+    card_TV::Real = duration(s) * length(s.V)
+    card_TV == 0 && return 0.0
+    τ = times(s)
     for v in s.V
-        for t in zip(τ[1:end-1],τ[2:end])
-            acc+=node_clustering(s,v,0.5*(t[1]+t[2]))*(t[2]-t[1])
+        for t in zip(τ[1:end-1], τ[2:end])
+            acc += node_clustering(s, v, 0.5 * (t[1] + t[2])) * (t[2] - t[1])
         end
     end
-    1.0/card_TV*acc
+    1.0 / card_TV * acc
 end
 

@@ -1,10 +1,11 @@
 """
 	coverage(ls)
 
-Return the coverage of the given link stream.
-By definition, the coverage of a link stream is 1.
+Return the coverage of the given link stream, which is always 1 by definition.
 """
-coverage(ls::Union{LinkStream,DirectedLinkStream})=1.0
+function coverage(ls::Union{LinkStream,DirectedLinkStream})
+	return 1.0
+end
 
 """
 	coverage(s)
@@ -13,8 +14,7 @@ Return the coverage of the given stream graph:
 ```math
 cov \\left( S \\right) = \\frac{\\left| W \\right|}{\\left| T \\times V \\right|}
 ```
-Note: For stream graphs with no node and/or no duration, this
-function returns 0.
+Note: For stream graphs with no node and/or no duration, this function returns 0.
 
 ### Reference
 - Matthieu Latapy, Tiphaine Viard and Clémence Magnien Social 
@@ -23,8 +23,8 @@ function returns 0.
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
 function coverage(s::Union{StreamGraph,DirectedStreamGraph})
-	if ((length(s.V)!=0) && (duration(s)!=0))
-		sum([duration(n) for (k,n) in s.W])/(duration(s)*length(s.V))
+	if ((length(s.V) !=0 ) && (duration(s) !=0 ))
+		sum([duration(n) for (k,n) in s.W]) / (duration(s) * length(s.V))
 	else
 		0.0
 	end

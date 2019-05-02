@@ -1,3 +1,476 @@
+"""
+    Node
+
+A temporal node is defined as a label and a presence, 
+which is a union of time intervals where the `Node` is active.
+Attributes:
+    - label::String : Name of the `Node`
+    - presence::IntervalUnion : Time intervals where the `Node` is active
+"""
+mutable struct Node
+    label::String
+    presence::IntervalUnion
+end
+
+function ==(n1::Node, n2::Node)
+    (n1.label == n2.label) && (n1.presence == n2.presence)
+end
+
+"""
+    Node(name,t0,t1)
+
+Constructor to quickly define a `Node` over `[t0,t1]`.
+Arguments:
+    Required:
+        - label::String : Name of the `Node`.
+        - t0::Real : Arrival time of the `Node`.
+        - t1::Real : Departure time of the `Node`.
+    Optional:
+        - open_left::bool : true if interval open on `t0`. Default is `false`.
+        - open_right::bool : true if interval open on `t1`. Default is `false`.
+"""
+function Node(label::String, t0::Real, t1::Real; open_left::bool=false, open_right::bool=false)
+    Node(label, IntervalUnion(t0,open_left,t1,open_right))
+end
+
+"""
+    string(n)
+"""
+function Base.string(n::Node)
+    "$(n.label) : $(string(n.presence))"
+end
+
+"""
+    show(n)
+"""
+function Base.show(io::IO, n::Node)
+    println(string(n))
+end
+
+"""
+    active(n,t)
+"""
+function active(n::Node, t::Real)
+    return t ∈ n.presence
+end
+
+"""
+    duration(n)
+"""
+function duration(n::Node)
+    return cardinal(n.presence)
+end
+
+"""
+    NodeSet
+
+`NodeSet` implements a data structure to store a set of temporal `Nodes`.
+Rather than having an array, `Nodes` are stored in a dictionary where the
+keys are the labels and and values are the presence intervals.
+"""
+mutable struct NodeSet
+    index::Dict{String,Int64}
+    elements::Array{Node,1}
+end
+
+"""
+    NodeSet()
+
+Empty `NodeSet` construtor.
+"""
+function NodeSet()
+    NodeSet(Dict(),Node[])
+end
+
+function Base.length(ns::NodeSet)
+    length(ns.elements)
+end
+
+function Base.iterate(ns::NodeSet)
+    iterate(ns.elements)
+end
+
+function Base.getindex(ns::NodeSet, label::String)
+    ns.elements[ns.index[label]]
+end
+
+function Base.setindex!(ns::NodeSet, presence::IntervalUnion, label::String)
+    if label in ns
+        ns.elements[ns.index[label]] = ns.elements[ns.index[label]] ∪ presence
+    else
+        push!(ns.elements,Node(label,presence))
+        ns.index[label] = length(ns)
+    end
+end
+
+"""
+    node ∈ NodeSet
+
+Returns true is the given temporal `Node` is in the `NodeSet`.
+"""
+function in(ns::NodeSet, node::Node)
+    haskey(ns.index, node.label)
+end
+
+"""
+    node_label ∈ NodeSet
+
+Returns true is there is a `Node` with the given label in the `NodeSet`.
+"""
+function in(ns::NodeSet, label::String)
+    haskey(ns.index, label)
+end
+
+"""
+    NodeSet(nodes)
+
+`NodeSet` constructor which takes an array of `Nodes` as input.
+"""
+function NodeSet(nodes::Array{Node,1})
+    new_nodeset = NodeSet()
+    for node in nodes
+        new_nodeset[node.label] = node.presence
+    end
+    new_nodeset
+end
+
+
+
+"""
+    update!(ns,node)
+
+Update the `NodeSet` with a new `Node`. If the node is already in the set,
+the presence will be updated to be the union of the previous presence and the new presence.
+"""
+function update!(ns::NodeSet, node::Node)
+    if node in ns
+        ns.elements[node.label] = ns.elements[node.label] ∪ node.presence
+    else
+        ns.elements[node.label] = node.presence
+    end
+end
+
+"""
+    cardinal(ns)
+
+Returns the cardinal of the `NodeSet`.
+"""
+function cardinal(ns::NodeSet)
+    sum([cardinal(presence) for (label,presence) in ns.elements])
+end
+
+"""
+    number_of_nodes(ns)
+
+Returns the number of nodes in the `NodeSet`.
+This should not be confused with the number of nodes in the stream.
+"""
+function number_of_nodes(ns::NodeSet)
+    length(ns.elements)
+end
+
+abstract type AbstractLink end
+
+"""
+    Link
+
+A `Link` is undirected and defined as two `Node` labels: `from` and `to`, and a presence,
+which is a union of time intervals where the `Link` is active.
+Since a `Link` is undirected, `from` and `to` are decided based on ordering: from <= to.
+This means that Link("a","b",[0,1]) == Link("b","a",[0,1])
+Attributes:
+    - from::String : Name of the `from` `Node`.
+    - to::String : Name of the `to` `Node`.
+    - presence::IntervalUnion : Time intervals where the `Link` is active.
+"""
+mutable struct Link <: AbstractLink
+    from::String
+    to::String
+    presence::IntervalUnion
+    Link(from::String, to::String, presence::IntervalUnion) = from > to ? new(to,from,presence) : new(from,to,presence)
+end
+
+function string(l::Link)
+    "$(l.from) <---> $(l.to) : $(string(l.presence))"
+end
+
+function show(io::IO, l::Link)
+    println(string(l))
+end
+
+mutable struct DirectedLink <: AbstractLink
+    from::String
+    to::String
+    presence::IntervalUnion
+end
+
+"""
+    string(l)
+"""
+function string(l::DirectedLink)
+    "$(l.from) ---> $(l.to) : $(string(l.presence))"
+end
+
+"""
+    show(l)
+"""
+function show(io::IO, l::DirectedLink)
+    println(string(l))
+end
+
+"""
+    l1 == l2
+
+Link equality.
+"""
+function ==(l1::AbstractLink, l2::AbstractLink)
+    (l1.from == l2.from) && (l1.to == l2.to) && (l1.presence == l2.presence)
+end
+
+"""
+    Link(name,from,to,t0,t1)
+
+Constructor to quickly define an undirected `Link` over `[t0,t1]` between `Node` `from` and `to`.
+Arguments:
+    Required:
+        - from::String : Label of the `from` `Node`.
+        - to::String : Label of the `to` `Node`.
+        - t0::Real : Starting time of the `Link`.
+        - t1::Real : Ending time of the `Link`.
+    Optional:
+        - open_left::bool : true if interval open on `t0`. Default is `false`.
+        - open_right::bool : true if interval open on `t1`. Default is `false`.
+"""
+function Link(name::String, from::String, to::String, t0::Real, t1::Real; open_left::bool=false, open_right::bool=false)
+    Link(from, to, IntervalUnion(t0,open_left,t1,open_right))
+end
+
+"""
+    DirectedLink(name,from,to,t0,t1)
+
+Constructor to quickly define a directed `Link` over `[t0,t1]` between `Node` `from` and `to`.
+Arguments:
+    Required:
+        - from::String : Label of the `from` `Node`.
+        - to::String : Label of the `to` `Node`.
+        - t0::Real : Starting time of the `Link`.
+        - t1::Real : Ending time of the `Link`.
+    Optional:
+        - open_left::bool : true if interval open on `t0`. Default is `false`.
+        - open_right::bool : true if interval open on `t1`. Default is `false`.
+"""
+function DirectedLink(name::String, from::String, to::String, t0::Real, t1::Real; open_left::bool=false, open_right::bool=false)
+    DirectedLink(from, to, IntervalUnion(t0,open_left,t1,open_right))
+end
+
+abstract type AbstractLinkSet end
+
+"""
+    LinkSet
+
+`LinkSet` implements a data structure to store a set of undirected temporal `Links`.
+Rather than having an array, `Links` are stored in a nested dictionary where the
+keys are the `from` and `to` labels and and values are the presence intervals.
+"""
+mutable struct LinkSet <: AbstractLinkSet
+    elements::Dict{String,Dict{String,IntervalUnion}}
+end
+
+"""
+    DirectedLinkSet
+
+`DirectedLinkSet` implements a data structure to store a set of directed temporal `Links`.
+Rather than having an array, `Links` are stored in a nested dictionary where the
+keys are the `from` and `to` labels and and values are the presence intervals.
+"""
+mutable struct DirectedLinkSet <: AbstractLinkSet
+    elements::Dict{String,Dict{String,IntervalUnion}}
+end
+
+"""
+    LinkSet()
+
+Empty `LinkSet` construtor.
+"""
+function LinkSet()
+    LinkSet(Dict())
+end
+
+"""
+    LinkSet(links)
+
+`LinkSet` constructor which takes an array of `Links` as input.
+"""
+function LinkSet(links::Array{Link,1})
+    new_linkset = LinkSet()
+    for link in links
+        new_linkset.elements[link.label] = node.presence
+    end
+    new_nodeset
+end
+
+"""
+    link ∈ LinkSet
+
+Returns true is the given temporal `Node` is in the `NodeSet`.
+"""
+function in(ns::NodeSet, node::Node)
+    haskey(ns.elements, node.label)
+end
+
+"""
+    update!(ls,node)
+
+Update the `LinkSet` with a new `Link`. If the link is already in the set,
+the presence will be updated to be the union of the previous presence and the new presence.
+"""
+function update!(ns::NodeSet, node::Node)
+    if node in ns
+        ns.elements[node.label] = ns.elements[node.label] ∪ node.presence
+    else
+        ns.elements[node.label] = node.presence
+    end
+end
+
+
+
+
+
+struct LinkStream <: AbstractUndirectedStream
+    name::String
+    T::IntervalUnion
+    V::Set{String}
+    E::Dict{String,Dict{String,Link}}
+end
+
+"""
+    LinkStream()
+
+Empty link stream constructor.
+"""
+function LinkStream()
+    LinkStream("no name", IntervalUnion(), Set(), Dict())
+end
+
+"""
+    LinkStream(name)
+
+Simplified LinkStream construtor.
+Arguments:
+    - name::String : Name of the LinkStream.
+"""
+function LinkStream(name::String)
+    LinkStream(name, IntervalUnion(), Set(), Dict())
+end
+
+"""
+    LinkStream(name,T)
+
+Simplified LinkStream construtor.
+Arguments:
+    - name::String : Name of the LinkStream.
+    - T::IntervalUnion : Interval of time on which the LinkStream is defined.
+"""
+function LinkStream(name::String, T::IntervalUnion)
+    LinkStream(name, T, Set(), Dict())
+end
+
+"""
+    LinkStream(name,t0,t1)
+
+Simplified LinkStream construtor.
+Arguments:
+    - name::String : Name of the LinkStream.
+    - t0::Real : Starting time of the LinkStream.
+    - t1::Real : Ending time of the LinkStream.
+"""
+function LinkStream(name::String, t0::Real, t1::Real)
+    T = IntervalUnion([Interval(t0,t1)])
+    LinkStream(name, T, Set(), Dict())
+end
+
+
+struct DirectedLinkStream <: AbstractDirectedStream
+    name::String
+    T::IntervalUnion
+    V::Set{String}
+    E::Dict{String,Dict{String,Link}}
+end
+
+struct StreamGraph <: AbstractUndirectedStream
+    name::String
+    T::IntervalUnion
+    V::Set{String}
+    W::Dict{String,Node}
+    E::Dict{String,Dict{String,Link}}
+end
+
+"""
+    StreamGraph(name)
+
+Simplified StreamGraph construtor.
+Arguments:
+    - name::String : Name of the StreamGraph.
+"""
+function StreamGraph(name::String) 
+    StreamGraph(name, IntervalUnion(), Set(), Dict(), Dict())
+end
+
+"""
+    StreamGraph(name,T)
+
+Simplified StreamGraph construtor.
+Arguments:
+    - name::String : Name of the StreamGraph.
+    - T::IntervalUnion : Interval of time on which the StreamGraph is defined.
+"""
+function StreamGraph(name::String, T::IntervalUnion)
+    StreamGraph(name, T, Set(), Dict(), Dict())
+end
+
+"""
+    StreamGraph(name,t0,t1)
+
+Simplified StreamGraph construtor.
+Arguments:
+    - name::String : Name of the StreamGraph.
+    - t0::Real : Starting time of the StreamGraph.
+    - t1::Real : Ending time of the StreamGraph.
+"""
+function StreamGraph(name::String, t0::Real, t1::Real)
+    T = IntervalUnion([Interval(t0,t1)])
+    StreamGraph(name, T, Set(), Dict(), Dict())
+end
+
+
+struct DirectedStreamGraph <: AbstractDirectedStream
+    name::String
+    T::IntervalUnion
+    V::Set{String}
+    W::Dict{String,Node}
+    E::Dict{String,Dict{String,Link}}
+end
+
+"""
+    DirectedLinkStream(name)
+"""
+function DirectedLinkStream(name::String)
+    DirectedLinkStream(name, IntervalUnion([]), Set(), Dict())
+end
+
+"""
+    DirectedLinkStream(name,T)
+"""
+function DirectedLinkStream(name::String, T::IntervalUnion)
+    DirectedLinkStream(name, T, Set(), Dict())
+end
+
+
+
+
+
+
+
 
 # ----------- TUPLES -------------
 #
@@ -5,20 +478,6 @@
 ≈(a::Tuple{Float64,Float64},b::Tuple{Float64,Float64};atol::Real=10^-6)=≈(a[1],b[1],atol=atol)&&≈(a[2],b[2],atol=atol)
 ≈(a::Array{Tuple{Float64,Float64}},b::Array{Tuple{Float64,Float64}};atol::Real=10^-6)=length(a)==length(b) ? all([x[1]≈x[2] for x in zip(a,b)]) : false
 
-mutable struct Node <: StreamObject
-    name::AbstractString
-    presence::Intervals
-end
-
-# ----------- LINK DEFINITIONS -------------
-#
-mutable struct Link <: StreamObject
-    name::AbstractString
-    presence::Intervals
-    from::AbstractString
-    to::AbstractString
-    weight::Float64
-end
 
 # --- Operations on StreamObjects ---
 ⊆(i::Intervals,o::StreamObject)=i ⊆ o.presence
@@ -162,47 +621,13 @@ end
 
 # ----------- STREAM DEFINITIONS -------------
 #
-struct LinkStream <: AbstractUndirectedStream
-    name::AbstractString
-    T::Intervals
-    V::Set{AbstractString}
-    E::Dict{AbstractString,Dict{AbstractString,Link}}
-end
 
-struct DirectedLinkStream <: AbstractDirectedStream
-    name::AbstractString
-    T::Intervals
-    V::Set{AbstractString}
-    E::Dict{AbstractString,Dict{AbstractString,Link}}
-end
 
 #Base.getindex(ls::LinkStream, name::AbstractString)=haskey(ls.E,name) ? ls.E[name] : []
 #Base.getindex(ls::LinkStream, t::Float64)=[l for (k,v) in ls.E for (kk,l) in v if t ∈ l]
 
-struct StreamGraph <: AbstractUndirectedStream
-    name::AbstractString
-    T::Intervals
-    V::Set{AbstractString}
-    W::Dict{AbstractString,Node}
-    E::Dict{AbstractString,Dict{AbstractString,Link}}
-end
 
-struct DirectedStreamGraph <: AbstractDirectedStream
-    name::AbstractString
-    T::Intervals
-    V::Set{AbstractString}
-    W::Dict{AbstractString,Node}
-    E::Dict{AbstractString,Dict{AbstractString,Link}}
-end
 
-LinkStream(name::AbstractString) = LinkStream(name, Intervals([]), Set(), Dict())
-LinkStream(name::AbstractString,T::Intervals) = LinkStream(name, T, Set(), Dict())
-
-DirectedLinkStream(name::AbstractString) = DirectedLinkStream(name, Intervals([]), Set(), Dict())
-DirectedLinkStream(name::AbstractString,T::Intervals) = DirectedLinkStream(name, T, Set(), Dict())
-
-StreamGraph(name::AbstractString) = StreamGraph(name, Intervals([]), Set(), Dict(), Dict())
-StreamGraph(name::AbstractString,T::Intervals) = StreamGraph(name, T, Set(), Dict(), Dict())
 
 function neighborhood(s::AbstractUndirectedStream, node::AbstractString)
     N=Dict{AbstractString,Intervals}()

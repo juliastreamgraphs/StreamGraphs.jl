@@ -37,35 +37,45 @@ n=\\left| V \\right|
   Link Streams for the Modeling of Interactions over Time".
   [(arXiv)](https://arxiv.org/pdf/1710.04073.pdf)
 """
-number_of_nodes(ls::Union{LinkStream,DirectedLinkStream})=length(ls.V)
+function number_of_nodes(ls::Union{LinkStream,DirectedLinkStream})
+	length(ls.V)
+end
 
 """
 	number_of_nodes(s)
 
 Return the number of nodes in a state.
 """
-number_of_nodes(s::State)=length(s.nodes)
+function number_of_nodes(s::State)
+	length(s.nodes)
+end
 
 """
 	number_of_nodes(tc)
 
 Return the number of nodes at the cursor's current state.
 """
-number_of_nodes(tc::TimeCursor)=length(nodes(tc))
+function number_of_nodes(tc::TimeCursor)
+	length(nodes(tc))
+end
 
 """
 	number_of_nodes(tc,t)
 
 Return the number of nodes in Gt using a time cursor.
 """
-number_of_nodes(tc::TimeCursor,t::Float64)=length(nodes(tc,t))
+function number_of_nodes(tc::TimeCursor, t::Real)
+	length(nodes(tc,t))
+end
 
 """
 	number_of_nodes(tc,t0,t1)
 
 Return the number of nodes which presence intersects with [t0;t1] using a time cursor.
 """
-number_of_nodes(tc::TimeCursor,t0::Float64,t1::Float64)=length(nodes(tc,t0,t1))
+function number_of_nodes(tc::TimeCursor, t0::Real, t1::Real)
+	length(nodes(tc,t0,t1))
+end
 
 """
 	number_of_links(s)
@@ -96,32 +106,42 @@ end
 
 Return the number of links in a state.
 """
-number_of_links(s::State)=length(s.links)
+function number_of_links(s::State)
+	length(s.links)
+end
 
 """
 	number_of_links(tc)
 
 Return the number of links in a cursor's current state.
 """
-number_of_links(tc::TimeCursor)=number_of_links(tc.S)
+function number_of_links(tc::TimeCursor)
+	number_of_links(tc.S)
+end
 
 """
 	number_of_links(tc,t)
 
 Return the number of links present at a given time using a time cursor.
 """
-number_of_links(tc::TimeCursor,t::Float64)=length(links(tc,t))
+function number_of_links(tc::TimeCursor, t::Real)
+	length(links(tc,t))
+end
 
 """
 	number_of_links(tc,t0,t1)
 
 Return the number of links which presence intersects with [t0;t1] using a time cursor.
 """
-number_of_links(tc::TimeCursor,t0::Float64,t1::Float64)=length(links(tc,t0,t1))
+function number_of_links(tc::TimeCursor, t0::Real, t1::Real)
+	length(links(tc,t0,t1))
+end
 
 """
 	length(p)
 
 Return the number of jumps in a path.
 """
-length(p::AbstractPath)=length(p.jumps)
+function length(p::AbstractPath)
+	length(p.jumps)
+end
